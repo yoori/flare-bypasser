@@ -1,0 +1,21 @@
+services:
+  flare-bypasser :
+    build:
+      args:
+        CHROME_VERSION: '130.'
+        UID: 1001
+      context: .
+      dockerfile: Dockerfile
+    container_name: flare-bypasser
+    image: flare-bypasser:latest
+    ports:
+      - 20080:8080
+    networks:
+      - testing-network
+    volumes:
+      - ./flare_bypasser_result:/opt/flare_bypasser/var/
+
+networks:
+  testing-network:
+    driver: bridge
+    name: testing-network

@@ -1,3 +1,4 @@
+import abc
 import sys
 import logging
 import os
@@ -72,19 +73,25 @@ class Response:
   def __init__(self, _dict):
     self.__dict__.update(_dict)
 
+class BaseCommandProcessor(object) :
+  @abc.abstractmethod
+  async def process_command(self, res: Response, req: Request, driver: BrowserWrapper) -> Response:
+    return None
+
 """
 Solver
 """
 class Solver(object) :
   _proxy : str = None
-  _driver : BrowserWrapper  = None
-  _cursor_position = None
+  _driver : BrowserWrapper = None
+  _command_processors : typing.Dict[str, BaseCommandProcessor] = []
   _screenshot_i : int = 0
   _debug : bool = True
 
-  def __init__(self, proxy = None) :
+  def __init__(self, proxy : str = None, command_processors : typing.Dict[str, BaseCommandProcessor] = {}) :
     self._proxy = proxy
     self._driver = None
+    self._command_processors = dict(command_processors) if command_processors else {}
 
   async def save_screenshot(self, step_name, image = None, mark_coords = None) :
     if self._debug :
@@ -106,15 +113,10 @@ class Solver(object) :
         fp.write(dom)
       self._screenshot_i += 1
 
-  # Method that can overriden and process specific commands
-  # It can return specific Response object (with additional fields for example)
-  async def process_command(self, res: Response, req: Request, driver: BrowserWrapper) -> Response:
-    return res
-
   async def solve(self, req: Request) -> Response:
     # do some validations
     if req.url is None:
-      raise Exception("Request parameter 'url' is mandatory in 'request.get' command.")
+      raise Exception("Parameter 'url' should be defined.")
 
     res = await self._resolve_challenge(req)
     logging.info("Solve result: " + str(res))
@@ -127,7 +129,7 @@ class Solver(object) :
       try:
         user_data_dir = os.environ.get('USER_DATA', None)
         use_proxy = (req.proxy if req.proxy else self._proxy)
-        self._driver = await BrowserWrapper.create()
+        self._driver = await BrowserWrapper.create(use_proxy)
         logging.info('New instance of webdriver has been created to perform the request (proxy=' +
           str(use_proxy) + '), timeout = ' + str(req.max_timeout))
         return await self._resolve_challenge_impl(req, start_time)
@@ -262,9 +264,11 @@ class Solver(object) :
       pass
     elif req.cmd == "request.get" :
       res.response = await self._driver.get_dom()
-    else :
+    elif req.cmd in self._command_processors :
       # User specific command
-      res = await self.process_command(res, req, self._driver)
+      res = await self._command_processors[req.cmd].process_command(res, req, self._driver)
+    else :
+      raise Exception("Unknown command : " + req.cmd)
 
     logging.info("Cookies got")
     # TODO: fill res.user_agent

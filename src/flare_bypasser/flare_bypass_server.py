@@ -6,6 +6,7 @@ import typing_extensions
 import asyncio
 import datetime
 import traceback
+import importlib
 
 import fastapi
 import pydantic
@@ -20,6 +21,8 @@ server = fastapi.FastAPI(
   tags_metadata = [
   ]
 )
+
+custom_command_processors = {}
 
 class HandleCommandResponseSolution(pydantic.BaseModel) :
   status : str
@@ -59,8 +62,6 @@ async def handle_command(
     fastapi.Body(description = "Proxy")
     ] = None,
   ):
-  print(">>>>>>>>>>>>>>>>>>> POINT #1", flush = True)
-
   start_timestamp = datetime.datetime.timestamp(datetime.datetime.now())
 
   try :
@@ -71,10 +72,10 @@ async def handle_command(
     solve_request.max_timeout = maxTimeout * 1.0 / 1000
     solve_request.proxy = proxy
 
-    solver = flare_bypasser.Solver()
+    global custom_command_processors
+    solver = flare_bypasser.Solver(proxy = proxy, command_processors = custom_command_processors)
     solve_response = await solver.solve(solve_request)
 
-    print("solve_response.message = " + str(solve_response.message), flush = True)
     return HandleCommandResponse(
       status = "ok",
       message = solve_response.message,
@@ -101,6 +102,19 @@ async def handle_command(
     )
 
 def server_run():
+  # FLARE_BYPASS_COMMANDPROCESSORS format : <command>:<module>.<class>
+  # class should have default constructor (without parameters)
+  custom_command_processors_str = os.environ.get('FLARE_BYPASS_COMMANDPROCESSORS', None)
+  if custom_command_processors_str :
+    global custom_command_processors
+    for mod in custom_command_processors_str.split(',;') :
+      command_name, import_module_and_class_name = mod.split(':', 1)
+      import_module_name, import_class_name = import_module_and_class_name.rsplit('.', 1)
+      module = importlib.import_module(import_module_name)
+      assert hasattr(module, import_class_name)
+      cls = getattr(module, import_class_name)
+      custom_command_processors[command_name] = cls()
+
   sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
   sys.argv.append('--worker-class')
   sys.argv.append('uvicorn.workers.UvicornWorker')

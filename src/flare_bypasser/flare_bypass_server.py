@@ -61,6 +61,10 @@ async def handle_command(
     str,
     fastapi.Body(description = "Proxy")
     ] = None,
+  params : typing_extensions.Annotated[
+    typing.Dict[str, typing.Any],
+    fastapi.Body(description = "Custom parameters for user defined command")
+    ] = None,
   ):
   start_timestamp = datetime.datetime.timestamp(datetime.datetime.now())
 
@@ -71,6 +75,7 @@ async def handle_command(
     solve_request.url = url
     solve_request.max_timeout = maxTimeout * 1.0 / 1000
     solve_request.proxy = proxy
+    solve_request.params = params
 
     global custom_command_processors
     solver = flare_bypasser.Solver(proxy = proxy, command_processors = custom_command_processors)

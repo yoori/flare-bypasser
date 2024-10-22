@@ -55,6 +55,7 @@ class Request(object):
   proxy: dict = None
   max_timeout: float = 60 # timeout in sec
   cookies: dict = None
+  params: dict = None
 
   def __init__(self, _dict = None):
     if _dict :
@@ -260,9 +261,9 @@ class Solver(object) :
 
     res.url = await self._driver.current_url()
     res.cookies = await self._driver.get_cookies()
-    if req.cmd == "request.get_cookies" :
+    if req.cmd == "request_cookies" :
       pass
-    elif req.cmd == "request.get" :
+    elif req.cmd == "request_page" :
       res.response = await self._driver.get_dom()
     elif req.cmd in self._command_processors :
       # User specific command

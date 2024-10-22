@@ -65,9 +65,9 @@ class BrowserWrapper(object) :
     nodriver_driver = await nodriver.start(sandbox = False)
     return BrowserWrapper(nodriver_driver)
 
-  # Get original driver - can be used in process_command specific implementation (override)
+  # Get original driver page impl - can be used only in user command specific implementations
   def get_driver(self) :
-    return self._nodriver_driver
+    return self._page
 
   async def current_url(self) :
     return self._page.url

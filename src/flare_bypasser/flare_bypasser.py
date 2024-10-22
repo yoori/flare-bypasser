@@ -124,7 +124,6 @@ class Solver(object) :
     return res
 
   async def _resolve_challenge(self, req: Request) -> Response:
-    driver = None
     start_time = datetime.datetime.now()
     try:
       try:
@@ -273,9 +272,6 @@ class Solver(object) :
 
     logging.info("Cookies got")
     # TODO: fill res.user_agent
-    #res.user_agent = flare_solver.utils.get_user_agent(driver)
-    #logging.info("User-Agent got")
-
 
     await self.save_screenshot('finish')
     logging.info('Solving finished')

@@ -73,6 +73,7 @@ class BrowserWrapper(object) :
     return self._page.url
 
   async def close(self) :
+    self._page = None
     if self._nodriver_driver :
       self._nodriver_driver.stop()
 

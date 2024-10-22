@@ -7,6 +7,7 @@ import asyncio
 import datetime
 import traceback
 import importlib
+import logging
 
 import fastapi
 import pydantic
@@ -107,6 +108,14 @@ async def handle_command(
     )
 
 def server_run():
+  logging.basicConfig(format = '%(asctime)s [%(name)s] [%(levelname)s] : %(message)s',
+    handlers = [logging.StreamHandler(sys.stdout)],
+    level = logging.INFO)
+
+  logging.getLogger('urllib3').setLevel(logging.ERROR)
+  logging.getLogger('selenium.webdriver.remote.remote_connection').setLevel(logging.WARNING)
+  logging.getLogger('undetected_chromedriver').setLevel(logging.WARNING)
+
   # FLARE_BYPASS_COMMANDPROCESSORS format : <command>:<module>.<class>
   # class should have default constructor (without parameters)
   custom_command_processors_str = os.environ.get('FLARE_BYPASS_COMMANDPROCESSORS', None)

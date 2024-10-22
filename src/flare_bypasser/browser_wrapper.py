@@ -113,15 +113,27 @@ class BrowserWrapper(object) :
   async def get_screenshot(self) : # Return screenshot as cv2 image (numpy array)
     tmp_file_path = None
     try :
-      tmp_file_path = os.path.join("/tmp", str(uuid.uuid4()) + ".png")
-      await self._page.save_screenshot(tmp_file_path)
-      return cv2.imread(tmp_file_path)
+      while True :
+        try :
+          tmp_file_path = os.path.join("/tmp", str(uuid.uuid4()) + ".png")
+          await self._page.save_screenshot(tmp_file_path)
+          return cv2.imread(tmp_file_path)
+        except nodriver.core.connection.ProtocolException as e :
+          if "not finished loading yet" not in str(e) :
+            raise
+        await asyncio.sleep(1)
     finally :
       if tmp_file_path is not None and os.path.exists(tmp_file_path) :
         os.remove(tmp_file_path)
 
   async def save_screenshot(self, image_path) :
-    await self._page.save_screenshot(image_path)
+    while True :
+      try :
+        await self._page.save_screenshot(image_path)
+      except nodriver.core.connection.ProtocolException as e :
+        if "not finished loading yet" not in str(e) :
+          raise
+      await asyncio.sleep(1)
 
   async def set_cookies(self, cookies: list[dict]) :
     # convert {"name": "...", "value": "...", ...} to array of http.cookiejar.Cookie

@@ -108,7 +108,8 @@ class BrowserWrapper(object) :
       raise
 
   async def get_dom(self) :
-    return await self._page.get_content()
+    res_dom = await self._page.get_content()
+    return (res_dom if res_dom is not None else "") #< nodriver return None sometimes (on error)
 
   async def get_screenshot(self) : # Return screenshot as cv2 image (numpy array)
     tmp_file_path = None

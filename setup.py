@@ -8,7 +8,7 @@ name = 'flare-bypasser'
 setup(
   name = 'flare-bypasser',
   python_requires = '>= 3.9',
-  version = '0.1.19',
+  version = '0.1.20',
   packages = [ "flare_bypasser" ],
   package_dir = {
     "": ".",
@@ -25,7 +25,8 @@ setup(
       'opencv-python',
       'certifi==2023.7.22',
       'requests', # nodriver require it
-      'nodriver @ git+https://github.com/ultrafunkamsterdam/nodriver.git',
+      'nodriver @ git+https://github.com/yoori/nodriver.git',
+      #< fork with cookie fix, switch to https://github.com/ultrafunkamsterdam/nodriver.git after MR
     ] + [ # Server dependecies
       #'requests',
       'fastapi',

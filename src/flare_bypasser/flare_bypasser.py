@@ -120,8 +120,12 @@ class Solver(object) :
     if req.url is None:
       raise Exception("Parameter 'url' should be defined.")
 
-    res = await self._resolve_challenge(req)
-    logging.info("Solve result: " + str(res))
+    try :
+      async with asyncio.timeout(req.max_timeout):
+        res = await self._resolve_challenge(req)
+        logging.info("Solve result: " + str(res))
+    except asyncio.TimeoutError:
+      raise Exception("Processing timeout (max_timeout = " + str(req.max_timeout) + ")")
     return res
 
   async def _resolve_challenge(self, req: Request) -> Response:

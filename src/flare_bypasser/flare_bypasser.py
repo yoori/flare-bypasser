@@ -97,7 +97,6 @@ class Solver(object) :
   async def save_screenshot(self, step_name, image = None, mark_coords = None) :
     if self._debug :
       screenshot_file_without_ext = str(self._screenshot_i) + '_' + step_name
-      logging.info("Screenshot saved to '" + screenshot_file_without_ext + "'")
 
       if image is not None :
         cv2.imwrite(screenshot_file_without_ext + ".png", image)
@@ -113,6 +112,8 @@ class Solver(object) :
       with open(screenshot_file_without_ext + '.html', 'w') as fp:
         fp.write(dom)
       self._screenshot_i += 1
+
+      logging.info("Screenshot saved to '" + screenshot_file_without_ext + "'")
 
   async def solve(self, req: Request) -> Response:
     # do some validations

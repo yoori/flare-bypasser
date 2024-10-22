@@ -130,6 +130,7 @@ class BrowserWrapper(object) :
     while True :
       try :
         await self._page.save_screenshot(image_path)
+        return
       except nodriver.core.connection.ProtocolException as e :
         if "not finished loading yet" not in str(e) :
           raise

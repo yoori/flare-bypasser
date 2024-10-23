@@ -62,7 +62,13 @@ class BrowserWrapper(object) :
   async def create(proxy = None) :
     BrowserWrapper.start_xvfb_display()
     # TODO: Pass proxy
-    nodriver_driver = await nodriver.start(sandbox = False)
+    browser_args = []
+    if proxy:
+      browser_args.append("--proxy-server=" + proxy)
+    nodriver_driver = await nodriver.start(
+      sandbox = False,
+      browser_args = browser_args
+    )
     return BrowserWrapper(nodriver_driver)
 
   # Get original driver page impl - can be used only in user command specific implementations

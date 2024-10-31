@@ -265,9 +265,9 @@ class Solver(object) :
 
     res.url = await self._driver.current_url()
     res.cookies = await self._driver.get_cookies()
-    if req.cmd == "request_cookies" :
+    if req.cmd == "request_cookies" or req.cmd == "request.get_cookies" :
       pass
-    elif req.cmd == "request_page" :
+    elif req.cmd == "request_page" or req.cmd == "request.get" :
       res.response = await self._driver.get_dom()
     elif req.cmd in self._command_processors :
       # User specific command

@@ -68,6 +68,7 @@ print(response.text)
 ### Commands
 
 #### + `request.get_cookies`
+#### + `request_cookies`
 
 Return cookies after challenge solve.
 
@@ -95,4 +96,9 @@ Example response:
 ```
 
 #### + `request.get`
+#### + `request_page`
+
 Returns cookies and page content (in response field) after challenge solve.
+
+### TODO
+Add `request.post` command

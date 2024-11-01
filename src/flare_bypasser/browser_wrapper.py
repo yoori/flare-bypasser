@@ -113,6 +113,9 @@ class BrowserWrapper(object) :
       print("EXCEPTION on click_coords '" + step + "': " + str(e))
       raise
 
+  async def get_user_agent(self) :
+    return await self._page.evaluate("window.navigator.userAgent")
+
   async def get_dom(self) :
     res_dom = await self._page.get_content()
     return (res_dom if res_dom is not None else "") #< nodriver return None sometimes (on error)

@@ -14,6 +14,8 @@ import numpy as np
 
 from flare_bypasser.browser_wrapper import BrowserWrapper
 
+USER_AGENT = None
+
 _ACCESS_DENIED_TITLES = [
   # Cloudflare
   'Access denied',
@@ -276,7 +278,11 @@ class Solver(object) :
       raise Exception("Unknown command : " + req.cmd)
 
     logging.info("Cookies got")
-    # TODO: fill res.user_agent
+
+    global USER_AGENT
+    if USER_AGENT is None:
+      USER_AGENT = await self._driver.get_user_agent()
+    res.user_agent = USER_AGENT
 
     await self.save_screenshot('finish')
     logging.info('Solving finished')

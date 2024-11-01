@@ -102,3 +102,7 @@ Returns cookies and page content (in response field) after challenge solve.
 
 ### TODO
 Add `request.post` command
+
+### Thanks
+If you would like to thank me, put a link to the sites of my partners:
+https://a.okaif.io (18+)

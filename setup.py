@@ -1,5 +1,5 @@
 import os
-import platform
+import sys
 
 from setuptools import setup
 
@@ -8,7 +8,7 @@ name = 'flare-bypasser'
 setup(
   name = 'flare-bypasser',
   python_requires = '>= 3.9',
-  version = '0.1.20',
+  version = '0.1.21',
   packages = [ "flare_bypasser" ],
   package_dir = {
     "": ".",
@@ -32,7 +32,12 @@ setup(
       'fastapi',
       'uvicorn',
       'gunicorn'
-    ] + ['xvfbwrapper==0.2.9'] if platform.system() == 'Linux' else [],
+    ] +
+    ['xvfbwrapper==0.2.9', ] if sys.platform != 'win32' else [] +
+    #< we believe that 'cygwin', 'darwin' are supported in addition to 'linux'
+    ['gunicorn'] if sys.platform not in ['win32', 'cygwin'] else []
+    #< gunicorn use fcntl (supported only at darwin, linux)
+    ,
   include_package_data = True,
   entry_points = {
     'console_scripts': [

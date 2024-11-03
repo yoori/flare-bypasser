@@ -6,6 +6,8 @@ services:
         UID: 1001
       context: .
       dockerfile: Dockerfile
+    #environment:
+    #  FLARE_BYPASS_USE_UVICORN: 1
     container_name: flare-bypasser
     image: flare-bypasser:latest
     ports:

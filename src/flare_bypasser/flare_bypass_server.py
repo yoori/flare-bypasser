@@ -8,10 +8,17 @@ import datetime
 import traceback
 import importlib
 import logging
+import argparse
 
 import fastapi
 import pydantic
-import gunicorn.app.wsgiapp
+
+USE_GUNICORN = (sys.platform not in ['win32', 'cygwin'] and 'FLARE_BYPASS_USE_UVICORN' not in os.environ)
+
+if USE_GUNICORN :
+  import gunicorn.app.wsgiapp
+else :
+  import uvicorn.main
 
 import flare_bypasser
 
@@ -116,6 +123,18 @@ def server_run():
   logging.getLogger('selenium.webdriver.remote.remote_connection').setLevel(logging.WARNING)
   logging.getLogger('undetected_chromedriver').setLevel(logging.WARNING)
 
+  parser = argparse.ArgumentParser(
+    description = 'Start flare_bypass server.',
+    epilog = 'Other arguments will be passed to gunicorn or uvicorn(win32) as is.')
+  parser.add_argument("-b", "--bind", type = str, default = '127.0.0.1:8000')
+  #< parse for pass to gunicorn as is and as "--host X --port X" to uvicorn
+  args, unknown_args = parser.parse_known_args()
+  try :
+    host, port = args.bind.split(':')
+  except :
+    print("Invalid 'bind' argument value : " + str(args.bind), file = sys.stderr, flush = True)
+    sys.exit(1)
+
   # FLARE_BYPASS_COMMANDPROCESSORS format : <command>:<module>.<class>
   # class should have default constructor (without parameters)
   custom_command_processors_str = os.environ.get('FLARE_BYPASS_COMMANDPROCESSORS', None)
@@ -129,11 +148,19 @@ def server_run():
       cls = getattr(module, import_class_name)
       custom_command_processors[command_name] = cls()
 
-  sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
-  sys.argv.append('--worker-class')
-  sys.argv.append('uvicorn.workers.UvicornWorker')
-  sys.argv.append('flare_bypasser:server')
-  sys.exit(gunicorn.app.wsgiapp.run())
+  sys.argv = [ re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0]) ]
+  sys.argv += unknown_args
+
+  if USE_GUNICORN :
+    sys.argv += [ '-b', args.bind ]
+    sys.argv += ['--worker-class', 'uvicorn.workers.UvicornWorker']
+    sys.argv += ['flare_bypasser:server']
+    sys.exit(gunicorn.app.wsgiapp.run())
+  else :
+    sys.argv += [ '--host', host ]
+    sys.argv += [ '--port', port ]
+    sys.argv += ['flare_bypasser:server']
+    sys.exit(uvicorn.main.main())
 
 if __name__ == '__main__':
   server_run()

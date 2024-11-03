@@ -33,6 +33,7 @@ the container.
 * Install [Chrome](https://www.google.com/intl/en_us/chrome/) (all OS) or [Chromium](https://www.chromium.org/getting-involved/download-chromium/) (just Linux, it doesn't work in Windows) web browser.
 * (Only in Linux) Install [Xvfb](https://en.wikipedia.org/wiki/Xvfb) package.
 * (Only in macOS) Install [XQuartz](https://www.xquartz.org/) package.
+* If you plan to use proxy with authorization : install [gost](https://github.com/ginuerzh/gost).
 * Clone this repository and open a shell in that path.
 * Run `pip install .` command to install FlareSolverr dependencies.
 * Run `flare_bypass_server` command to start FlareBypasser.

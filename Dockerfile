@@ -17,6 +17,10 @@ RUN mkdir -p "${PACKAGES_DIR}" \
   && equivs-build adwaita-icon-theme \
   && mv adwaita-icon-theme_*.deb ${PACKAGES_DIR}/adwaita-icon-theme.deb
 
+# Install gost proxy (for process requests with proxy, that require authorization)
+RUN apt-get install -y --no-install-recommends curl  # gost-install.sh requirement
+COPY utils/gost-install.sh ./gost-install.sh
+RUN ./gost-install.sh --install
 
 
 FROM python:3.11-slim-bullseye
@@ -31,6 +35,7 @@ ENV CHROME_VERSION=${CHROME_VERSION}
 
 # Copy dummy packages
 COPY --from=builder ${PACKAGES_DIR} ${PACKAGES_DIR}
+COPY --from=builder /usr/local/bin/gost /usr/local/bin/gost
 
 # Install dependencies and create user
 # You can test Chromium running this command inside the container:

@@ -7,12 +7,14 @@ import random
 import datetime
 import asyncio
 import certifi
+import contextlib
 
 # Image processing imports
 import cv2
 import numpy as np
 
 from flare_bypasser.browser_wrapper import BrowserWrapper
+from flare_bypasser.proxy_controller import ProxyController
 
 USER_AGENT = None
 
@@ -88,13 +90,19 @@ class Solver(object) :
   _proxy : str = None
   _driver : BrowserWrapper = None
   _command_processors : typing.Dict[str, BaseCommandProcessor] = []
+  _proxy_controller : ProxyController = None
   _screenshot_i : int = 0
   _debug : bool = True
 
-  def __init__(self, proxy : str = None, command_processors : typing.Dict[str, BaseCommandProcessor] = {}) :
+  class Exception(Exception) :
+    pass
+
+  def __init__(self, proxy : str = None, command_processors : typing.Dict[str, BaseCommandProcessor] = {},
+    proxy_controller = None) :
     self._proxy = proxy
     self._driver = None
     self._command_processors = dict(command_processors) if command_processors else {}
+    self._proxy_controller = proxy_controller
 
   async def save_screenshot(self, step_name, image = None, mark_coords = None) :
     if self._debug :
@@ -132,26 +140,38 @@ class Solver(object) :
 
   async def _resolve_challenge(self, req: Request) -> Response:
     start_time = datetime.datetime.now()
+    step = 'start'
     try:
-      try:
-        user_data_dir = os.environ.get('USER_DATA', None)
-        use_proxy = (req.proxy if req.proxy else self._proxy)
-        self._driver = await BrowserWrapper.create(use_proxy)
-        logging.info('New instance of webdriver has been created to perform the request (proxy=' +
-          str(use_proxy) + '), timeout = ' + str(req.max_timeout))
-        return await self._resolve_challenge_impl(req, start_time)
+      user_data_dir = os.environ.get('USER_DATA', None)
+      use_proxy = (req.proxy if req.proxy else self._proxy)
+      proxy_holder = None
 
-      except Exception as e:
-        error_message = 'Error solving the challenge. ' + str(e).replace('\n', '\\n')
-        logging.error(error_message)
-        raise Exception(error_message)
+      step = 'proxy init'
+      if use_proxy is not None and '@' in use_proxy :
+        if not self._proxy_controller :
+          raise Solver.Exception("For use proxy with authorization you should pass proxy_controller into c-tor")
+        proxy_holder = self._proxy_controller.get_proxy(use_proxy)
+        use_proxy = "socks5://127.0.0.1:" + str(proxy_holder.local_port())
+      else :
+        proxy_holder = contextlib.nullcontext()
 
-    finally:
-      logging.info('Close webdriver')
-      if self._driver is not None:
-        await self._driver.close()
-        self._driver = None
-        logging.debug('A used instance of webdriver has been destroyed')
+      step = 'solving'
+      with proxy_holder :
+        try :
+          self._driver = await BrowserWrapper.create(use_proxy)
+          logging.info('New instance of webdriver has been created to perform the request (proxy=' +
+            str(use_proxy) + '), timeout = ' + str(req.max_timeout))
+          return await self._resolve_challenge_impl(req, start_time)
+        finally:
+          logging.info('Close webdriver')
+          if self._driver is not None:
+            await self._driver.close()
+            self._driver = None
+            logging.debug('A used instance of webdriver has been destroyed')
+    except Exception as e:
+      error_message = "Error solving the challenge. On step '" + step + "': " + str(e).replace('\n', '\\n')
+      logging.error(error_message)
+      raise Exception(error_message)
 
   @staticmethod
   def _check_timeout(req: Request, start_time: datetime.datetime, step_name: str):

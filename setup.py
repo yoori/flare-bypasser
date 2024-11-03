@@ -27,6 +27,9 @@ setup(
       'requests', # nodriver require it
       'nodriver @ git+https://github.com/yoori/nodriver.git',
       #< fork with cookie fix, switch to https://github.com/ultrafunkamsterdam/nodriver.git after MR
+      'argparse',
+      'oslex',
+      'jinja2',
     ] + [ # Server dependecies
       #'requests',
       'fastapi',

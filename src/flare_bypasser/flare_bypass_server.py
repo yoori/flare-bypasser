@@ -12,6 +12,7 @@ import argparse
 
 import fastapi
 import pydantic
+import flare_bypasser.proxy_controller
 
 USE_GUNICORN = (sys.platform not in ['win32', 'cygwin'] and 'FLARE_BYPASS_USE_UVICORN' not in os.environ)
 
@@ -31,6 +32,7 @@ server = fastapi.FastAPI(
 )
 
 custom_command_processors = {}
+proxy_controller = None
 
 class HandleCommandResponseSolution(pydantic.BaseModel) :
   status : str
@@ -86,7 +88,11 @@ async def handle_command(
     solve_request.params = params
 
     global custom_command_processors
-    solver = flare_bypasser.Solver(proxy = proxy, command_processors = custom_command_processors)
+    global proxy_controller
+    solver = flare_bypasser.Solver(
+      proxy = proxy,
+      command_processors = custom_command_processors,
+      proxy_controller = proxy_controller)
     solve_response = await solver.solve(solve_request)
 
     return HandleCommandResponse(
@@ -127,6 +133,10 @@ def server_run():
     description = 'Start flare_bypass server.',
     epilog = 'Other arguments will be passed to gunicorn or uvicorn(win32) as is.')
   parser.add_argument("-b", "--bind", type = str, default = '127.0.0.1:8000')
+  parser.add_argument("--proxy-listen-start-port", type = int, default = 10000)
+  parser.add_argument("--proxy-listen-end-port", type = int, default = 20000)
+  parser.add_argument("--proxy-command", type = str,
+    default = "gost -L=socks5://127.0.0.1:{{LOCAL_PORT}} -F='{{UPSTREAM_URL}}'")
   #< parse for pass to gunicorn as is and as "--host X --port X" to uvicorn
   args, unknown_args = parser.parse_known_args()
   try :
@@ -150,6 +160,13 @@ def server_run():
 
   sys.argv = [ re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0]) ]
   sys.argv += unknown_args
+
+  # Init ProxyController
+  global proxy_controller
+  proxy_controller = flare_bypasser.proxy_controller.ProxyController(
+    start_port = args.proxy_listen_start_port,
+    end_port = args.proxy_listen_end_port,
+    command = args.proxy_command)
 
   if USE_GUNICORN :
     sys.argv += [ '-b', args.bind ]

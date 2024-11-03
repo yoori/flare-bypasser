@@ -6,6 +6,7 @@ import uuid
 import http.cookiejar
 import cv2
 
+import typing
 import nodriver
 
 XVFB_DISPLAY = None

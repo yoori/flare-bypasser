@@ -89,7 +89,7 @@ Example response:
       {"name":"cf_clearance","value":"OvR1ItQg.BERjqCP3x.jLvl0dwt3ryTkYB9ycvoYwPw-1729525048-1.2.1.1-XwfWOOILDSrghfgKcmTWMyaOzg0MX5uhIyRDb9j_E6fgSUCYWWgfgULsMV9OcAtJ74asicOvUgZdgD56k1ryPFh_nWxFdmc547LGkcokXUvtj5DxlIo5mqK1Wk7TgEOvj_Sz44_1Jzj41Qsfw57WIfu9wpDm6aTe0lMZ.8TP5maHGja5bgxtqRRW4gaNCQJpZiLmauclhZnIubERNGziatv_euMp_xXRZUjpOygGOzDyL7w3PeN0P2HTZTl8IIcGSOktE3ryRyyysWcoIlnLiBTcoGrjOM3Av6TrvYlDkqhrZwmsbKNrRpfjfaUDClz.w1_SbS0rMLLJ7isxqUdT92RhdWcPD6aANKOpoqdAu7povEGC8pghVMgo7vLu4CBm3nHlmgMSDQgOB6L2XiHMBuPJdMAq_wkfqcqITl1qfo8","port":null,"domain":".torrentleech.pl","path":"/","secure":true},
       {"name":"PHPSESSID","value":"uk4uefb5p8njsjcbpea1plpl45","port":null,"domain":"torrentleech.pl","path":"/","secure":false}
     ],
-    "userAgent": null,
+    "userAgent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
     "response": null
   }
 }

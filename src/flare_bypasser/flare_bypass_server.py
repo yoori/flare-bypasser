@@ -54,26 +54,28 @@ class HandleCommandResponse(pydantic.BaseModel) :
 async def handle_command(
   url : typing_extensions.Annotated[
     str,
-    fastapi.Body(description = "Url")
+    fastapi.Body(description = "Url for solve challenge.")
     ],
   cmd : typing_extensions.Annotated[
     str,
     fastapi.Body(description = "Command for execute")] = None,
   cookies : typing_extensions.Annotated[
     typing.List[typing.Dict],
-    fastapi.Body(description = "Cookies")
+    fastapi.Body(description = "Cookies to send.")
     ] = None,
   maxTimeout : typing_extensions.Annotated[
     float,
-    fastapi.Body(description = "Max timeout in ms")
+    fastapi.Body(description = "Max processing timeout in ms.")
     ] = 60000,
   proxy : typing_extensions.Annotated[
     str,
-    fastapi.Body(description = "Proxy")
+    fastapi.Body(description = """Proxy in format : <protocol>://(<user>:<password>@)?<host>:<port> .
+Examples: socks5://1.1.1.1:2000, http://user:password@1.1.1.1:8080.
+If you use proxy with authorization and use flare-bypasser as package, please, read instructions - need to install gost.""")
     ] = None,
   params : typing_extensions.Annotated[
     typing.Dict[str, typing.Any],
-    fastapi.Body(description = "Custom parameters for user defined command")
+    fastapi.Body(description = "Custom parameters for user defined commands.")
     ] = None,
   ):
   start_timestamp = datetime.datetime.timestamp(datetime.datetime.now())

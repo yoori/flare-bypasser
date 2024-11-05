@@ -1,5 +1,4 @@
 # FlareBypasser
-
 FlareBypasser is a service to bypass Cloudflare and DDoS-GUARD protection,
 work to solve the challenge after October 20, 2024.
 
@@ -107,3 +106,7 @@ Add `request.post` command
 ### Thanks
 If you would like to thank me, put a link to the sites of my partners:
 https://a.okaif.io (18+)
+
+### Advanced Usage
+In some cases you need to make some specific actions on page after challenge solving (click, fill form, ...).
+For this case you can implement own command over extension - see [examples/custom_user_command] (https://github.com/yoori/flare-bypasser/tree/main/examples/custom_user_command)

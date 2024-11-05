@@ -48,36 +48,13 @@ class HandleCommandResponse(pydantic.BaseModel) :
   endTimestamp : float
   solution : typing.Optional[HandleCommandResponseSolution] = None
 
-@server.post("/v1",
-  response_model = HandleCommandResponse,
-  tags = ['API'])
-async def handle_command(
-  url : typing_extensions.Annotated[
-    str,
-    fastapi.Body(description = "Url for solve challenge.")
-    ],
-  cmd : typing_extensions.Annotated[
-    str,
-    fastapi.Body(description = "Command for execute")] = None,
-  cookies : typing_extensions.Annotated[
-    typing.List[typing.Dict],
-    fastapi.Body(description = "Cookies to send.")
-    ] = None,
-  maxTimeout : typing_extensions.Annotated[
-    float,
-    fastapi.Body(description = "Max processing timeout in ms.")
-    ] = 60000,
-  proxy : typing_extensions.Annotated[
-    str,
-    fastapi.Body(description = """Proxy in format : <protocol>://(<user>:<password>@)?<host>:<port> .
-Examples: socks5://1.1.1.1:2000, http://user:password@1.1.1.1:8080.
-If you use proxy with authorization and use flare-bypasser as package, please, read instructions - need to install gost.""")
-    ] = None,
-  params : typing_extensions.Annotated[
-    typing.Dict[str, typing.Any],
-    fastapi.Body(description = "Custom parameters for user defined commands.")
-    ] = None,
-  ):
+async def process_solve_request(
+  url : str,
+  cmd : str,
+  cookies : list = None,
+  max_timeout : int = None, #< in msec.
+  proxy : str = None,
+  params : dict = {}):
   start_timestamp = datetime.datetime.timestamp(datetime.datetime.now())
 
   try :
@@ -85,7 +62,7 @@ If you use proxy with authorization and use flare-bypasser as package, please, r
     solve_request.cmd = cmd
     solve_request.cookies = cookies
     solve_request.url = url
-    solve_request.max_timeout = maxTimeout * 1.0 / 1000
+    solve_request.max_timeout = max_timeout * 1.0 / 1000
     solve_request.proxy = proxy
     solve_request.params = params
 
@@ -122,6 +99,190 @@ If you use proxy with authorization and use flare-bypasser as package, please, r
       endTimestamp = datetime.datetime.timestamp(datetime.datetime.now()),
     )
 
+# Endpoint compatible with flaresolverr API.
+@server.post("/v1", response_model = HandleCommandResponse, tags = ['FlareSolverr compatiblity API'],
+  response_model_exclude_none = True)
+async def Process_request_in_flaresolverr_format(
+  url : typing_extensions.Annotated[
+    str,
+    fastapi.Body(description = "Url for solve challenge.")
+    ],
+  cmd : typing_extensions.Annotated[
+    str,
+    fastapi.Body(description = "Command for execute")] = None,
+  cookies : typing_extensions.Annotated[
+    typing.List[typing.Dict],
+    fastapi.Body(description = "Cookies to send.")
+    ] = None,
+  maxTimeout : typing_extensions.Annotated[
+    float,
+    fastapi.Body(description = "Max processing timeout in ms.")
+    ] = 60000,
+  proxy : typing_extensions.Annotated[
+    str,
+    fastapi.Body(description = """Proxy in format : <protocol>://(<user>:<password>@)?<host>:<port> .
+Examples: socks5://1.1.1.1:2000, http://user:password@1.1.1.1:8080.
+If you use proxy with authorization and use flare-bypasser as package, please, read instructions - need to install gost.""")
+    ] = None,
+  params : typing_extensions.Annotated[
+    typing.Dict[str, typing.Any],
+    fastapi.Body(description = "Custom parameters for user defined commands.")
+    ] = None,
+  ):
+  return await process_solve_request(
+    url = url,
+    cmd = cmd,
+    cookies = cookies,
+    max_timeout = maxTimeout,
+    proxy = proxy,
+    params = params
+  )
+
+# REST API concept methods.
+@server.post("/get_cookies", response_model = HandleCommandResponse, tags = ['Standard API'],
+  response_model_exclude_none = True)
+async def Get_cookies_after_solve(
+  url : typing_extensions.Annotated[
+    str,
+    fastapi.Body(description = "Url for solve challenge.")
+    ],
+  cookies : typing_extensions.Annotated[
+    typing.List[typing.Dict],
+    fastapi.Body(description = "Cookies to send.")
+    ] = None,
+  maxTimeout : typing_extensions.Annotated[
+    float,
+    fastapi.Body(description = "Max processing timeout in ms.")
+    ] = 60000,
+  proxy : typing_extensions.Annotated[
+    str,
+    fastapi.Body(description = """Proxy in format : <protocol>://(<user>:<password>@)?<host>:<port> .
+Examples: socks5://1.1.1.1:2000, http://user:password@1.1.1.1:8080.
+If you use proxy with authorization and use flare-bypasser as package, please, read instructions - need to install gost.""")
+    ] = None,
+  ):
+  return await process_solve_request(
+    url = url,
+    cmd = 'get_cookies',
+    cookies = cookies,
+    max_timeout = maxTimeout,
+    proxy = proxy,
+    params = None
+  )
+
+@server.post("/get_page", response_model = HandleCommandResponse, tags = ['Standard API'],
+  response_model_exclude_none = True)
+async def Get_cookies_and_page_content_after_solve(
+  url : typing_extensions.Annotated[
+    str,
+    fastapi.Body(description = "Url for solve challenge.")
+    ],
+  cookies : typing_extensions.Annotated[
+    typing.List[typing.Dict],
+    fastapi.Body(description = "Cookies to send.")
+    ] = None,
+  maxTimeout : typing_extensions.Annotated[
+    float,
+    fastapi.Body(description = "Max processing timeout in ms.")
+    ] = 60000,
+  proxy : typing_extensions.Annotated[
+    str,
+    fastapi.Body(description = """Proxy in format : <protocol>://(<user>:<password>@)?<host>:<port> .
+Examples: socks5://1.1.1.1:2000, http://user:password@1.1.1.1:8080.
+If you use proxy with authorization and use flare-bypasser as package, please, read instructions - need to install gost.""")
+    ] = None,
+  ):
+  return await process_solve_request(
+    url = url,
+    cmd = 'get_page',
+    cookies = cookies,
+    max_timeout = maxTimeout,
+    proxy = proxy,
+    params = None
+  )
+
+@server.post("/make_post", response_model = HandleCommandResponse, tags = ['Standard API'],
+  response_model_exclude_none = True)
+async def Get_cookies_and_POST_request_result(
+  url : typing_extensions.Annotated[
+    str,
+    fastapi.Body(description = "Url for solve challenge.")
+    ],
+  postData : typing_extensions.Annotated[
+    str,
+    fastapi.Body(description = """Post data that will be passed in request""")
+    ],
+  cookies : typing_extensions.Annotated[
+    typing.List[typing.Dict],
+    fastapi.Body(description = "Cookies to send.")
+    ] = None,
+  maxTimeout : typing_extensions.Annotated[
+    float,
+    fastapi.Body(description = "Max processing timeout in ms.")
+    ] = 60000,
+  proxy : typing_extensions.Annotated[
+    str,
+    fastapi.Body(description = """Proxy in format : <protocol>://(<user>:<password>@)?<host>:<port> .
+Examples: socks5://1.1.1.1:2000, http://user:password@1.1.1.1:8080.
+If you use proxy with authorization and use flare-bypasser as package, please, read instructions - need to install gost.""")
+    ] = None,
+  """
+  postDataContentType : typing_extensions.Annotated[
+    str,
+    fastapi.Body(description = "Content-Type that will be sent.")
+    ] = '',
+  """
+  ):
+  return await process_solve_request(
+    url = url,
+    cmd = 'make_post',
+    cookies = cookies,
+    max_timeout = maxTimeout,
+    proxy = proxy,
+    params = {
+      'postData' : postData,
+      #'postDataContentType' : postDataContentType,
+    }
+  )
+
+@server.post("/command/{command}", response_model = HandleCommandResponse, tags = ['Standard API'],
+  response_model_exclude_none = True)
+async def Process_user_custom_command(
+  command : typing_extensions.Annotated[
+    str,
+    fastapi.Path(description = "User command to execute")],
+  url : typing_extensions.Annotated[
+    str,
+    fastapi.Body(description = "Url for solve challenge.")
+    ],
+  cookies : typing_extensions.Annotated[
+    typing.List[typing.Dict],
+    fastapi.Body(description = "Cookies to send.")
+    ] = None,
+  maxTimeout : typing_extensions.Annotated[
+    float,
+    fastapi.Body(description = "Max processing timeout in ms.")
+    ] = 60000,
+  proxy : typing_extensions.Annotated[
+    str,
+    fastapi.Body(description = """Proxy in format : <protocol>://(<user>:<password>@)?<host>:<port> .
+Examples: socks5://1.1.1.1:2000, http://user:password@1.1.1.1:8080.
+If you use proxy with authorization and use flare-bypasser as package, please, read instructions - need to install gost.""")
+    ] = None,
+  params : typing_extensions.Annotated[
+    typing.Dict,
+    fastapi.Body(description = "Params for execute custom user command.")
+    ] = None,
+  ):
+  return await process_solve_request(
+    url = url,
+    cmd = command,
+    cookies = cookies,
+    max_timeout = maxTimeout,
+    proxy = proxy,
+    params = params
+  )
+
 def server_run():
   logging.basicConfig(format = '%(asctime)s [%(name)s] [%(levelname)s] : %(message)s',
     handlers = [logging.StreamHandler(sys.stdout)],
@@ -135,6 +296,7 @@ def server_run():
     description = 'Start flare_bypass server.',
     epilog = 'Other arguments will be passed to gunicorn or uvicorn(win32) as is.')
   parser.add_argument("-b", "--bind", type = str, default = '127.0.0.1:8000')
+  parser.add_argument("--extensions", nargs = '*', type = str)
   parser.add_argument("--proxy-listen-start-port", type = int, default = 10000)
   parser.add_argument("--proxy-listen-end-port", type = int, default = 20000)
   parser.add_argument("--proxy-command", type = str,
@@ -153,12 +315,34 @@ def server_run():
   if custom_command_processors_str :
     global custom_command_processors
     for mod in custom_command_processors_str.split(',;') :
-      command_name, import_module_and_class_name = mod.split(':', 1)
-      import_module_name, import_class_name = import_module_and_class_name.rsplit('.', 1)
-      module = importlib.import_module(import_module_name)
-      assert hasattr(module, import_class_name)
-      cls = getattr(module, import_class_name)
-      custom_command_processors[command_name] = cls()
+      try :
+        command_name, import_module_and_class_name = mod.split(':', 1)
+        import_module_name, import_class_name = import_module_and_class_name.rsplit('.', 1)
+        module = importlib.import_module(import_module_name)
+        assert hasattr(module, import_class_name)
+        cls = getattr(module, import_class_name)
+        logging.info("Loaded user command: " + str(command_name))
+        custom_command_processors[command_name] = cls()
+      except Exception as e :
+        logging.error("Can't load user command '" + str(mod) +
+          "'(by FLARE_BYPASS_COMMANDPROCESSORS): " + str(e))
+        sys.exit(1)
+
+  if args.extensions :
+    for extension in args.extensions :
+      # Expect that extension element has format: <module>.<method>
+      try :
+        import_module_name, entry_point = extension.split(':', 1)
+        module = importlib.import_module(import_module_name)
+        assert hasattr(module, entry_point)
+        get_user_commands_method = getattr(module, entry_point)
+        user_commands = get_user_commands_method()
+        for command_name, command_processor in user_commands.items() :
+          logging.info("Loaded user command: " + str(command_name))
+          custom_command_processors[command_name] = command_processor
+      except Exception as e :
+        logging.error("Can't load user command for '" + str(extension) + "': " + str(e))
+        sys.exit(1)
 
   sys.argv = [ re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0]) ]
   sys.argv += unknown_args

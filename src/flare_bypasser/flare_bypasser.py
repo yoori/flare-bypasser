@@ -3,11 +3,14 @@ import sys
 import logging
 import os
 import typing
+import copy
 import random
 import datetime
 import asyncio
 import certifi
 import contextlib
+import html
+import urllib
 
 # Image processing imports
 import cv2
@@ -79,9 +82,69 @@ class Response:
     self.__dict__.update(_dict)
 
 class BaseCommandProcessor(object) :
+  # preprocess url before solve (for example: can replace url with page content for POST request processing)
   @abc.abstractmethod
-  async def process_command(self, res: Response, req: Request, driver: BrowserWrapper) -> Response:
-    return None
+  async def preprocess_command(self, req: Request, driver: BrowserWrapper) -> Request:
+    return req
+
+  @abc.abstractmethod
+  async def process_command(self, res: Response, req: Request, driver: BrowserWrapper
+    ) -> Response:
+    return res
+
+"""
+Standard commands implementations.
+"""
+class GetCookiesCommandProcessor(BaseCommandProcessor) :
+  pass #< Use all default process implementations.
+
+class GetPageCommandProcessor(BaseCommandProcessor) :
+  async def process_command(self, res: Response, req: Request, driver: BrowserWrapper
+    ) -> Response:
+    res.response = await driver.get_dom()
+    return res
+
+class PostCommandProcessor(BaseCommandProcessor) :
+  async def preprocess_command(self, req: Request, driver: BrowserWrapper) -> Request:
+    # prepare page with form for emulate POST.
+    if req.params is None or 'postData' not in req.params :
+      raise Exception("postData should be defined for POST.")
+
+    postData = req.params['postData']
+    post_form = f'<form id="postForm" action="{req.url}" method="POST">'
+    query_string = postData if postData[0] != '?' else postData[1:]
+    pairs = query_string.split('&')
+    for pair in pairs:
+      parts = pair.split('=')
+      try:
+        name = urllib.parse.unquote(parts[0])
+      except Exception:
+        name = parts[0]
+      if name == 'submit':
+        continue
+      try:
+        value = urllib.parse.unquote(parts[1])
+      except Exception:
+        value = parts[1]
+      post_form += f"""<input type="text" name="{html.escape(urllib.parse.quote(name))}"
+        value="{html.escape(urllib.parse.quote(value))}"><br>"""
+    post_form += '</form>'
+    html_content = f"""
+      <!DOCTYPE html>
+      <html>
+      <body>
+          {post_form}
+          <script>document.getElementById('postForm').submit();</script>
+      </body>
+      </html>"""
+
+    req.url = "data:text/html;charset=utf-8," + html_content
+    return req
+
+  async def process_command(self, res: Response, req: Request, driver: BrowserWrapper
+    ) -> Response:
+    res.response = await driver.get_dom()
+    return res
 
 """
 Solver
@@ -95,14 +158,27 @@ class Solver(object) :
   _debug : bool = True
 
   class Exception(Exception) :
-    pass
+    step = None
+    def __init__(self, message : str, step : str = None):
+      super().__init__(message)
+      self.step = step
 
   def __init__(self, proxy : str = None, command_processors : typing.Dict[str, BaseCommandProcessor] = {},
     proxy_controller = None) :
     self._proxy = proxy
     self._driver = None
-    self._command_processors = dict(command_processors) if command_processors else {}
     self._proxy_controller = proxy_controller
+    self._command_processors = dict(command_processors) if command_processors else {}
+    # init standard commands
+    get_cookies_command_processor = GetCookiesCommandProcessor()
+    self._command_processors['get_cookies'] = get_cookies_command_processor
+    self._command_processors['request.get_cookies'] = get_cookies_command_processor
+    get_page_command_processor = GetPageCommandProcessor()
+    self._command_processors['get_page'] = get_page_command_processor
+    self._command_processors['request.get'] = get_page_command_processor
+    make_post_command_processor = PostCommandProcessor()
+    self._command_processors['make_post'] = make_post_command_processor
+    self._command_processors['request.post'] = make_post_command_processor
 
   async def save_screenshot(self, step_name, image = None, mark_coords = None) :
     if self._debug :
@@ -168,10 +244,14 @@ class Solver(object) :
             await self._driver.close()
             self._driver = None
             logging.debug('A used instance of webdriver has been destroyed')
+    except Solver.Exception as e:
+      error_message = "Error solving the challenge. On step '" + str(e.step) + "': " + str(e).replace('\n', '\\n')
+      logging.error(error_message)
+      raise Solver.Exception(error_message, step = e.step)
     except Exception as e:
       error_message = "Error solving the challenge. On step '" + step + "': " + str(e).replace('\n', '\\n')
       logging.error(error_message)
-      raise Exception(error_message)
+      raise Solver.Exception(error_message)
 
   @staticmethod
   def _check_timeout(req: Request, start_time: datetime.datetime, step_name: str):
@@ -216,98 +296,119 @@ class Solver(object) :
     return challenge_found
 
   async def _resolve_challenge_impl(self, req: Request, start_time : datetime.datetime) -> Response:
-    res = Response({})
+    step = 'solving'
+    try :
+      res = Response({})
 
-    # navigate to the page
-    logging.debug(f'Navigating to... {req.url}')
-    await self._driver.get(req.url)
+      if req.cmd not in self._command_processors :
+        raise Exception("Unknown command : " + req.cmd)
 
-    logging.debug(f'To make screenshot')
-    await self.save_screenshot('evil_logic')
+      command_processor = self._command_processors[req.cmd]
+      assert command_processor
 
-    # set cookies if required
-    if req.cookies is not None and len(req.cookies) > 0:
-      logging.debug(f'Setting cookies...')
-      await self._driver.set_cookies(cookies)
-      await self._driver.get(req.url)
+      step = 'command preprocessing'
+      preprocess_res = await command_processor.preprocess_command(copy.deepcopy(req), self._driver)
 
-    # find challenge by title
-    challenge_found = await self._check_challenge()
+      step = 'parse command preprocessing result'
+      open_url = True # preprocess_command can say, that page opening isn't required (it opened it already).
+      if (isinstance(preprocess_res, list) or isinstance(preprocess_res, tuple)) and len(preprocess_res) > 1 :
+        preprocessed_req = preprocess_res[0]
+        open_url = preprocess_res[1]
+      else :
+        preprocessed_req = preprocess_res
 
-    await self.save_screenshot('after_challenge_check')
+      step = 'navigate to url'
+      if open_url :
+        # navigate to the page
+        logging.debug(f'Navigating to... {req.url}')
+        await self._driver.get(preprocessed_req.url)
 
-    if not challenge_found :
-      await self.save_screenshot('no_challenge_found')
-      logging.info("Challenge not detected!")
-      res.message = "Challenge not detected!"
-    else : # first challenge found
-      logging.info("Challenge detected, to solve it")
+      logging.debug(f'To make screenshot')
+      await self.save_screenshot('evil_logic')
 
-      attempt = 0
+      step = 'set cookies'
 
-      while True:
-        Solver._check_timeout(req, start_time, "challenge loading wait")
-        logging.info("Challenge step #" + str(attempt))
+      # set cookies if required
+      if preprocessed_req.cookies is not None and len(preprocessed_req.cookies) > 0:
+        logging.debug(f'Setting cookies...')
+        await self._driver.set_cookies(cookies)
+        await self._driver.get(preprocessed_req.url)
 
-        await self.save_screenshot('attempt')
+      step = 'check challenge'
+      # find challenge by title
+      challenge_found = await self._check_challenge()
 
-        # check that challenge present (wait when it will disappear after click)
-        challenge_found = await self._check_challenge()
-        if not challenge_found :
-          logging.info("Challenge disappeared on step #" + str(attempt))
-          break
+      await self.save_screenshot('after_challenge_check')
 
-        # check that need to click,
-        # get screenshot of full page (all elements is in shadowroot)
-        # clicking can be required few times.
-        page_image = await self._driver.get_screenshot()
-        click_coord = Solver._get_flare_click_point(page_image)
-        if click_coord :
-          logging.info("Verify checkbot found, click coordinates: " + str(click_coord))
-          await self.save_screenshot('to_verify_click', image = page_image, mark_coords = click_coord)
-          # recheck that challenge present - we can be already redirected and
-          # need to exclude click on result page
+      if not challenge_found :
+        await self.save_screenshot('no_challenge_found')
+        logging.info("Challenge not detected!")
+        res.message = "Challenge not detected!"
+      else : # first challenge found
+        step = 'solve challenge'
+        logging.info("Challenge detected, to solve it")
+
+        attempt = 0
+
+        while True:
+          Solver._check_timeout(req, start_time, "challenge loading wait")
+          logging.info("Challenge step #" + str(attempt))
+
+          await self.save_screenshot('attempt')
+
+          # check that challenge present (wait when it will disappear after click)
           challenge_found = await self._check_challenge()
           if not challenge_found :
             logging.info("Challenge disappeared on step #" + str(attempt))
             break
 
-          logging.info("Click challenge by coords: " + str(click_coord[0]) + ", " + str(click_coord[1]))
-          await self._driver.click_coords(click_coord)
-          await asyncio.sleep(1)
+          # check that need to click,
+          # get screenshot of full page (all elements is in shadowroot)
+          # clicking can be required few times.
+          page_image = await self._driver.get_screenshot()
+          click_coord = Solver._get_flare_click_point(page_image)
+          if click_coord :
+            logging.info("Verify checkbot found, click coordinates: " + str(click_coord))
+            await self.save_screenshot('to_verify_click', image = page_image, mark_coords = click_coord)
+            # recheck that challenge present - we can be already redirected and
+            # need to exclude click on result page
+            challenge_found = await self._check_challenge()
+            if not challenge_found :
+              logging.info("Challenge disappeared on step #" + str(attempt))
+              break
 
-          res.message = "Challenge solved!" #< challenge found and solved once (as minimum)
-          await self.save_screenshot('after_verify_click')
+            logging.info("Click challenge by coords: " + str(click_coord[0]) + ", " + str(click_coord[1]))
+            await self._driver.click_coords(click_coord)
+            await asyncio.sleep(1)
 
-        attempt = attempt + 1
-        await asyncio.sleep(_SHORT_TIMEOUT)
+            res.message = "Challenge solved!" #< challenge found and solved once (as minimum)
+            await self.save_screenshot('after_verify_click')
 
-      logging.info("Challenge solving finished")
-      await self.save_screenshot('solving_finish')
+          attempt = attempt + 1
+          await asyncio.sleep(_SHORT_TIMEOUT)
 
-    res.url = await self._driver.current_url()
-    res.cookies = await self._driver.get_cookies()
-    if req.cmd == "request_cookies" or req.cmd == "request.get_cookies" :
-      pass
-    elif req.cmd == "request_page" or req.cmd == "request.get" :
-      res.response = await self._driver.get_dom()
-    elif req.cmd in self._command_processors :
-      # User specific command
-      res = await self._command_processors[req.cmd].process_command(res, req, self._driver)
-    else :
-      raise Exception("Unknown command : " + req.cmd)
+        logging.info("Challenge solving finished")
+        await self.save_screenshot('solving_finish')
 
-    logging.info("Cookies got")
+      step = 'get cookies'
+      res.url = await self._driver.current_url()
+      res.cookies = await self._driver.get_cookies()
+      logging.info("Cookies got")
+      global USER_AGENT
+      if USER_AGENT is None:
+        step = 'get user-agent'
+        USER_AGENT = await self._driver.get_user_agent()
+      res.user_agent = USER_AGENT
 
-    global USER_AGENT
-    if USER_AGENT is None:
-      USER_AGENT = await self._driver.get_user_agent()
-    res.user_agent = USER_AGENT
+      step = 'command processing'
+      res = await command_processor.process_command(res, req, self._driver)
 
-    await self.save_screenshot('finish')
-    logging.info('Solving finished')
+      await self.save_screenshot('finish')
+      logging.info('Solving finished')
 
-    return res
+      return res
+    except Exception as e :
+      raise Solver.Exception(str(e), step = step)
 
   @staticmethod
   def _get_flare_click_point(image) :

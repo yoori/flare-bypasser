@@ -27,6 +27,13 @@ the container.
 > **Warning**
 > Installing as package only works for x64 architecture. For other architectures see Docker images.
 
+* Install [Python >=3.9](https://www.python.org/downloads/).
+* Install [Chrome](https://www.google.com/intl/en_us/chrome/) (all OS) or [Chromium](https://www.chromium.org/getting-involved/download-chromium/) (just Linux, it doesn't work in Windows) web browser.
+* (Only in Unix) Install [Xvfb](https://en.wikipedia.org/wiki/Xvfb) package:</br>
+`sudo apt-get install xvfb` on Debian based Unix.</br>
+`sudo yum install xorg-x11-server-Xvfb` on Linux based Unix.
+* (Only in macOS) Install [XQuartz](https://www.xquartz.org/) package.
+* If you plan to use proxy with authorization : install [gost](https://github.com/ginuerzh/gost).
 * Run `pip install git+https://github.com/yoori/flare-bypasser.git`.
 * Run `flare_bypass_server` command to start FlareBypasser.
 

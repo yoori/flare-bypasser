@@ -35,7 +35,7 @@ the container.
 > **Warning**
 > Installing from source code only works for x64 architecture. For other architectures see Docker images.
 
-* Install [Python 3.11](https://www.python.org/downloads/).
+* Install [Python >=3.9](https://www.python.org/downloads/).
 * Install [Chrome](https://www.google.com/intl/en_us/chrome/) (all OS) or [Chromium](https://www.chromium.org/getting-involved/download-chromium/) (just Linux, it doesn't work in Windows) web browser.
 * (Only in Unix) Install [Xvfb](https://en.wikipedia.org/wiki/Xvfb) package:</br>
 `sudo apt-get install xvfb` on Debian based Unix.</br>

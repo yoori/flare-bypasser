@@ -10,7 +10,8 @@ services:
     image: flare-bypasser:latest
     ports:
       - 20080:8080
-    volumes:
-      - ./flare_bypasser_result:/opt/flare_bypasser/var/
-      # - ./examples/custom_user_commands/:/opt/flare_bypasser/extensions/
+    #volumes:
+      #- ./var:/opt/flare_bypasser/var/
+      #< Uncomment if you persistent logs between runs
+      #- ./examples/custom_user_commands/:/opt/flare_bypasser/extensions/
       #< Uncomment for run with extension example (/command/my-click uri)

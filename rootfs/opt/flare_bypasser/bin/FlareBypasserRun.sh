@@ -19,7 +19,7 @@ sudo python3 /opt/flare_bypasser/bin/linux_chrome_installer.py \
   { echo "Chrome of required version '$CHROME_VERSION' not found" >&2 ; exit 1 ; }
 
 EXTENSION_MODULES=$(
-  find /opt/flare_bypasser/extensions/ -type f -name '*.py' -not -name '.*' | \
+  find /opt/flare_bypasser/extensions/ -type f -name '*.py' -not -name '.*' 2>/dev/null | \
       sed 's|^/opt/flare_bypasser/extensions/||' | \
       sed -r 's/[.]py$//' | \
       sed 's/$/:get_user_commands/')

@@ -226,12 +226,10 @@ async def Get_cookies_and_POST_request_result(
 Examples: socks5://1.1.1.1:2000, http://user:password@1.1.1.1:8080.
 If you use proxy with authorization and use flare-bypasser as package, please, read instructions - need to install gost.""")
     ] = None,
-  """
-  postDataContentType : typing_extensions.Annotated[
-    str,
-    fastapi.Body(description = "Content-Type that will be sent.")
-    ] = '',
-  """
+  #postDataContentType : typing_extensions.Annotated[
+  #  str,
+  #  fastapi.Body(description = "Content-Type that will be sent.")
+  #  ] = '',
   ):
   return await process_solve_request(
     url = url,

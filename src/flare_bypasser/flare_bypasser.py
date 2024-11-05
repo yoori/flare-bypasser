@@ -253,14 +253,6 @@ class Solver(object) :
       logging.error(error_message)
       raise Solver.Exception(error_message)
 
-  @staticmethod
-  def _check_timeout(req: Request, start_time: datetime.datetime, step_name: str):
-    if req.max_timeout is not None :
-      now = datetime.datetime.now()
-      wait_time_sec = (now - start_time).total_seconds()
-      if wait_time_sec > req.max_timeout :
-        raise FunctionTimedOut("Timed out on " + step_name)
-
   async def _check_challenge(self) :
     driver = self._driver
     page_title = await driver.title()
@@ -351,7 +343,6 @@ class Solver(object) :
         attempt = 0
 
         while True:
-          Solver._check_timeout(req, start_time, "challenge loading wait")
           logging.info("Challenge step #" + str(attempt))
 
           await self.save_screenshot('attempt')

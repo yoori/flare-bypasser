@@ -23,6 +23,13 @@ We provide a `docker-compose.yml` configuration file. Clone this repository and 
 `docker compose up -d` to start
 the container.
 
+### From github as pip package
+> **Warning**
+> Installing as package only works for x64 architecture. For other architectures see Docker images.
+
+* Run `pip install git+https://github.com/yoori/flare-bypasser.git`.
+* Run `flare_bypass_server` command to start FlareBypasser.
+
 ### From source code
 
 > **Warning**
@@ -30,11 +37,13 @@ the container.
 
 * Install [Python 3.11](https://www.python.org/downloads/).
 * Install [Chrome](https://www.google.com/intl/en_us/chrome/) (all OS) or [Chromium](https://www.chromium.org/getting-involved/download-chromium/) (just Linux, it doesn't work in Windows) web browser.
-* (Only in Linux) Install [Xvfb](https://en.wikipedia.org/wiki/Xvfb) package.
+* (Only in Unix) Install [Xvfb](https://en.wikipedia.org/wiki/Xvfb) package:</br>
+`sudo apt-get install xvfb` on Debian based Unix.</br>
+`sudo yum install xorg-x11-server-Xvfb` on Linux based Unix.
 * (Only in macOS) Install [XQuartz](https://www.xquartz.org/) package.
 * If you plan to use proxy with authorization : install [gost](https://github.com/ginuerzh/gost).
-* Clone this repository and open a shell in that path.
-* Run `pip install .` command to install FlareSolverr dependencies.
+* Clone this repository.
+* Run `pip install .` (from project root).
 * Run `flare_bypass_server` command to start FlareBypasser.
 
 ## Usage
@@ -67,8 +76,10 @@ print(response.text)
 
 ### Commands
 
-#### + `request.get_cookies`
-#### + `request_cookies`
+I recommend to use normalized rest API (path per command) - it more strict ... See /docs page after server start.
+
+#### POST `/v1` : cmd = `request.get_cookies` (FlareSolverr compatible API)
+#### POST `/get_cookies` (see /docs)
 
 Return cookies after challenge solve.
 
@@ -95,18 +106,20 @@ Example response:
 
 ```
 
-#### + `request.get`
-#### + `request_page`
+#### POST `/v1` : cmd = `request.get` (FlareSolverr compatible API)
+#### POST `/get_page` (see /docs)
 
 Returns cookies and page content (in response field) after challenge solve.
 
-### TODO
-Add `request.post` command
+#### POST `/v1` : cmd = `request.post` (FlareSolverr compatible API)
+#### POST `/make_post` (see /docs)
+
+Send POST request (with using form). Need to pass postData parameter value.
+
+### Advanced Usage
+In some cases you need to make some specific actions on page after challenge solving (click, fill form, ...).
+For this case you can implement own command over extension - see [examples/custom_user_commands](https://github.com/yoori/flare-bypasser/tree/main/examples/custom_user_commands)
 
 ### Thanks
 If you would like to thank me, put a link to the sites of my partners:
 https://a.okaif.io (18+)
-
-### Advanced Usage
-In some cases you need to make some specific actions on page after challenge solving (click, fill form, ...).
-For this case you can implement own command over extension - see [examples/custom_user_command] (https://github.com/yoori/flare-bypasser/tree/main/examples/custom_user_command)

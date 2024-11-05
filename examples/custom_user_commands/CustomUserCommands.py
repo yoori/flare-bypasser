@@ -14,7 +14,7 @@ class MyClickCommandProcessor(BaseCommandProcessor) :
       raise Exception("MyClickCommandProcessor: no input for click: " + str(dom))
     await els[0].click()
     res.response = await nodriver_tab.get_content()
-    # Expect here "Bledny kod" error in DOM
+    # Expect here "Bledny kod" text in DOM (appears only after click)
     return res
 
 def get_user_commands():

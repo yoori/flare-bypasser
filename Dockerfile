@@ -26,9 +26,9 @@ RUN ./gost-install.sh --install
 FROM python:3.11-slim-bullseye
 
 ARG CHROME_VERSION=131
-ARG UID
+ARG UID=1111
 ARG GID=0
-ARG UNAME=uuu
+ARG UNAME=flare_bypasser
 
 ENV PACKAGES_DIR=/packages
 ENV CHROME_VERSION=${CHROME_VERSION}

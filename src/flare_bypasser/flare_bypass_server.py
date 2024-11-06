@@ -8,10 +8,9 @@ import traceback
 import importlib
 import logging
 import argparse
-
 import fastapi
 import pydantic
-import flare_bypasser.proxy_controller
+
 import flare_bypasser
 
 USE_GUNICORN = (

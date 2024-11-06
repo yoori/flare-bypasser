@@ -15,8 +15,8 @@ import urllib
 # Image processing imports
 import cv2
 
-from flare_bypasser.browser_wrapper import BrowserWrapper
-from flare_bypasser.proxy_controller import ProxyController
+from .browser_wrapper import BrowserWrapper
+from .proxy_controller import ProxyController
 
 USER_AGENT = None
 

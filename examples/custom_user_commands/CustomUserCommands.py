@@ -2,7 +2,7 @@ from flare_bypasser import BaseCommandProcessor, Request, Response, BrowserWrapp
 
 
 class MyClickCommandProcessor(BaseCommandProcessor):
-  async def preprocess_command(self, req: Request) -> Request:
+  async def preprocess_command(self, req: Request, driver: BrowserWrapper) -> Request:
     # Here we can check some required parameters in req.params and raise error.
     return req
 

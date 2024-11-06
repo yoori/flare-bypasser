@@ -3,7 +3,6 @@ import sys
 import re
 import typing
 import typing_extensions
-import asyncio
 import datetime
 import traceback
 import importlib
@@ -13,26 +12,27 @@ import argparse
 import fastapi
 import pydantic
 import flare_bypasser.proxy_controller
+import flare_bypasser
 
-USE_GUNICORN = (sys.platform not in ['win32', 'cygwin'] and 'FLARE_BYPASS_USE_UVICORN' not in os.environ)
+USE_GUNICORN = (
+  sys.platform not in ['win32', 'cygwin'] and 'FLARE_BYPASS_USE_UVICORN' not in os.environ
+)
 
 if USE_GUNICORN :
   import gunicorn.app.wsgiapp
 else :
   import uvicorn.main
 
-import flare_bypasser
-
 server = fastapi.FastAPI(
   openapi_url = '/docs/openapi.json',
   docs_url = '/docs',
-  swagger_ui_parameters = { "defaultModelsExpandDepth": -1 },
-  tags_metadata = [
-  ]
+  swagger_ui_parameters = {"defaultModelsExpandDepth": -1},
+  tags_metadata = []
 )
 
 custom_command_processors = {}
 proxy_controller = None
+
 
 class HandleCommandResponseSolution(pydantic.BaseModel) :
   status : str
@@ -41,6 +41,7 @@ class HandleCommandResponseSolution(pydantic.BaseModel) :
   userAgent: typing.Optional[str] = None
   response : typing.Optional[typing.Any] = None
 
+
 class HandleCommandResponse(pydantic.BaseModel) :
   status : str
   message : str
@@ -48,11 +49,12 @@ class HandleCommandResponse(pydantic.BaseModel) :
   endTimestamp : float
   solution : typing.Optional[HandleCommandResponseSolution] = None
 
+
 async def process_solve_request(
   url : str,
   cmd : str,
   cookies : list = None,
-  max_timeout : int = None, #< in msec.
+  max_timeout : int = None,  # in msec.
   proxy : str = None,
   params : dict = {}):
   start_timestamp = datetime.datetime.timestamp(datetime.datetime.now())
@@ -99,9 +101,14 @@ async def process_solve_request(
       endTimestamp = datetime.datetime.timestamp(datetime.datetime.now()),
     )
 
+
 # Endpoint compatible with flaresolverr API.
-@server.post("/v1", response_model = HandleCommandResponse, tags = ['FlareSolverr compatiblity API'],
-  response_model_exclude_none = True)
+@server.post(
+  "/v1",
+  response_model = HandleCommandResponse,
+  tags = ['FlareSolverr compatiblity API'],
+  response_model_exclude_none = True
+)
 async def Process_request_in_flaresolverr_format(
   url : typing_extensions.Annotated[
     str,
@@ -120,9 +127,11 @@ async def Process_request_in_flaresolverr_format(
     ] = 60000,
   proxy : typing_extensions.Annotated[
     str,
-    fastapi.Body(description = """Proxy in format : <protocol>://(<user>:<password>@)?<host>:<port> .
+    fastapi.Body(description =
+"""Proxy in format : <protocol>://(<user>:<password>@)?<host>:<port> .
 Examples: socks5://1.1.1.1:2000, http://user:password@1.1.1.1:8080.
-If you use proxy with authorization and use flare-bypasser as package, please, read instructions - need to install gost.""")
+If you use proxy with authorization and use flare-bypasser as package, please,
+read instructions - need to install gost.""")
     ] = None,
   params : typing_extensions.Annotated[
     typing.Dict[str, typing.Any],
@@ -137,6 +146,7 @@ If you use proxy with authorization and use flare-bypasser as package, please, r
     proxy = proxy,
     params = params
   )
+
 
 # REST API concept methods.
 @server.post("/get_cookies", response_model = HandleCommandResponse, tags = ['Standard API'],
@@ -156,9 +166,11 @@ async def Get_cookies_after_solve(
     ] = 60000,
   proxy : typing_extensions.Annotated[
     str,
-    fastapi.Body(description = """Proxy in format : <protocol>://(<user>:<password>@)?<host>:<port> .
+    fastapi.Body(description =
+"""Proxy in format : <protocol>://(<user>:<password>@)?<host>:<port> .
 Examples: socks5://1.1.1.1:2000, http://user:password@1.1.1.1:8080.
-If you use proxy with authorization and use flare-bypasser as package, please, read instructions - need to install gost.""")
+If you use proxy with authorization and use flare-bypasser as package, please,
+read instructions - need to install gost.""")
     ] = None,
   ):
   return await process_solve_request(
@@ -170,8 +182,11 @@ If you use proxy with authorization and use flare-bypasser as package, please, r
     params = None
   )
 
-@server.post("/get_page", response_model = HandleCommandResponse, tags = ['Standard API'],
-  response_model_exclude_none = True)
+
+@server.post(
+  "/get_page", response_model = HandleCommandResponse, tags = ['Standard API'],
+  response_model_exclude_none = True
+)
 async def Get_cookies_and_page_content_after_solve(
   url : typing_extensions.Annotated[
     str,
@@ -187,9 +202,11 @@ async def Get_cookies_and_page_content_after_solve(
     ] = 60000,
   proxy : typing_extensions.Annotated[
     str,
-    fastapi.Body(description = """Proxy in format : <protocol>://(<user>:<password>@)?<host>:<port> .
+    fastapi.Body(description =
+"""Proxy in format : <protocol>://(<user>:<password>@)?<host>:<port> .
 Examples: socks5://1.1.1.1:2000, http://user:password@1.1.1.1:8080.
-If you use proxy with authorization and use flare-bypasser as package, please, read instructions - need to install gost.""")
+If you use proxy with authorization and use flare-bypasser as package, please,
+read instructions - need to install gost.""")
     ] = None,
   ):
   return await process_solve_request(
@@ -201,8 +218,11 @@ If you use proxy with authorization and use flare-bypasser as package, please, r
     params = None
   )
 
-@server.post("/make_post", response_model = HandleCommandResponse, tags = ['Standard API'],
-  response_model_exclude_none = True)
+
+@server.post(
+  "/make_post", response_model = HandleCommandResponse, tags = ['Standard API'],
+  response_model_exclude_none = True
+)
 async def Get_cookies_and_POST_request_result(
   url : typing_extensions.Annotated[
     str,
@@ -222,9 +242,11 @@ async def Get_cookies_and_POST_request_result(
     ] = 60000,
   proxy : typing_extensions.Annotated[
     str,
-    fastapi.Body(description = """Proxy in format : <protocol>://(<user>:<password>@)?<host>:<port> .
+    fastapi.Body(description =
+"""Proxy in format : <protocol>://(<user>:<password>@)?<host>:<port> .
 Examples: socks5://1.1.1.1:2000, http://user:password@1.1.1.1:8080.
-If you use proxy with authorization and use flare-bypasser as package, please, read instructions - need to install gost.""")
+If you use proxy with authorization and use flare-bypasser as package, please,
+read instructions - need to install gost.""")
     ] = None,
   #postDataContentType : typing_extensions.Annotated[
   #  str,
@@ -243,8 +265,10 @@ If you use proxy with authorization and use flare-bypasser as package, please, r
     }
   )
 
-@server.post("/command/{command}", response_model = HandleCommandResponse, tags = ['Standard API'],
-  response_model_exclude_none = True)
+@server.post(
+  "/command/{command}", response_model = HandleCommandResponse, tags = ['Standard API'],
+  response_model_exclude_none = True
+)
 async def Process_user_custom_command(
   command : typing_extensions.Annotated[
     str,
@@ -263,9 +287,11 @@ async def Process_user_custom_command(
     ] = 60000,
   proxy : typing_extensions.Annotated[
     str,
-    fastapi.Body(description = """Proxy in format : <protocol>://(<user>:<password>@)?<host>:<port> .
+    fastapi.Body(description =
+"""Proxy in format : <protocol>://(<user>:<password>@)?<host>:<port> .
 Examples: socks5://1.1.1.1:2000, http://user:password@1.1.1.1:8080.
-If you use proxy with authorization and use flare-bypasser as package, please, read instructions - need to install gost.""")
+If you use proxy with authorization and use flare-bypasser as package, please,
+read instructions - need to install gost.""")
     ] = None,
   params : typing_extensions.Annotated[
     typing.Dict,
@@ -303,7 +329,7 @@ def server_run():
   args, unknown_args = parser.parse_known_args()
   try :
     host, port = args.bind.split(':')
-  except :
+  except Exception as e :
     print("Invalid 'bind' argument value : " + str(args.bind), file = sys.stderr, flush = True)
     sys.exit(1)
 
@@ -342,7 +368,7 @@ def server_run():
         logging.error("Can't load user command for '" + str(extension) + "': " + str(e))
         sys.exit(1)
 
-  sys.argv = [ re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0]) ]
+  sys.argv = [re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])]
   sys.argv += unknown_args
 
   # Init ProxyController
@@ -353,13 +379,13 @@ def server_run():
     command = args.proxy_command)
 
   if USE_GUNICORN :
-    sys.argv += [ '-b', args.bind ]
+    sys.argv += ['-b', args.bind]
     sys.argv += ['--worker-class', 'uvicorn.workers.UvicornWorker']
     sys.argv += ['flare_bypasser:server']
     sys.exit(gunicorn.app.wsgiapp.run())
   else :
-    sys.argv += [ '--host', host ]
-    sys.argv += [ '--port', port ]
+    sys.argv += ['--host', host]
+    sys.argv += ['--port', port]
     sys.argv += ['flare_bypasser:server']
     sys.exit(uvicorn.main.main())
 

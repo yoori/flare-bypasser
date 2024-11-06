@@ -14,7 +14,6 @@ import urllib
 
 # Image processing imports
 import cv2
-import numpy as np
 
 from flare_bypasser.browser_wrapper import BrowserWrapper
 from flare_bypasser.proxy_controller import ProxyController
@@ -96,7 +95,7 @@ class BaseCommandProcessor(object) :
 Standard commands implementations.
 """
 class GetCookiesCommandProcessor(BaseCommandProcessor) :
-  pass #< Use all default process implementations.
+  pass  # Use all default process implementations.
 
 class GetPageCommandProcessor(BaseCommandProcessor) :
   async def process_command(self, res: Response, req: Request, driver: BrowserWrapper
@@ -323,7 +322,7 @@ class Solver(object) :
       # set cookies if required
       if preprocessed_req.cookies is not None and len(preprocessed_req.cookies) > 0:
         logging.debug(f'Setting cookies...')
-        await self._driver.set_cookies(cookies)
+        await self._driver.set_cookies(preprocessed_req.cookies)
         await self._driver.get(preprocessed_req.url)
 
       step = 'check challenge'
@@ -372,7 +371,7 @@ class Solver(object) :
             await self._driver.click_coords(click_coord)
             await asyncio.sleep(1)
 
-            res.message = "Challenge solved!" #< challenge found and solved once (as minimum)
+            res.message = "Challenge solved!"  # challenge found and solved once (as minimum)
             await self.save_screenshot('after_verify_click')
 
           attempt = attempt + 1
@@ -406,7 +405,7 @@ class Solver(object) :
     image_height, image_width, _ = image.shape
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     ret, mask = cv2.threshold(gray_image, 240, 255, 0)
-    #< we can use 230 + closing by filter for more accuracy, but it require much CPU.
+    # < we can use 230 + closing by filter for more accuracy, but it require much CPU.
 
     #cv2.imwrite('masked_image.png', mask) # Check that mask contains outer rect contour if colors will be changed
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)

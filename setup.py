@@ -1,4 +1,3 @@
-import os
 import sys
 
 from setuptools import setup
@@ -9,7 +8,7 @@ setup(
   name = 'flare-bypasser',
   python_requires = '>= 3.9',
   version = '0.1.22',
-  packages = [ "flare_bypasser" ],
+  packages = ["flare_bypasser"],
   package_dir = {
     "": ".",
     "flare_bypasser": "./src/flare_bypasser"
@@ -19,28 +18,26 @@ setup(
   author = 'yoori',
   author_email = 'yuri.kuznecov@gmail.com',
   description = '',
-  install_requires = [ # Solver dependecies
-      'asyncio',
-      'uuid',
-      'opencv-python',
-      'certifi==2023.7.22',
-      'requests', # nodriver require it
-      'nodriver @ git+https://github.com/yoori/nodriver.git',
-      #< fork with cookie fix, switch to https://github.com/ultrafunkamsterdam/nodriver.git after MR
-      'argparse',
-      'oslex',
-      'jinja2',
-    ] + [ # Server dependecies
-      #'requests',
-      'fastapi',
-      'uvicorn',
-      'gunicorn'
-    ] +
-    ['xvfbwrapper==0.2.9', ] if sys.platform != 'win32' else [] +
-    #< we believe that 'cygwin', 'darwin' are supported in addition to 'linux'
-    ['gunicorn'] if sys.platform not in ['win32', 'cygwin'] else []
-    #< gunicorn use fcntl (supported only at darwin, linux)
-    ,
+  install_requires = [  # Solver dependecies
+    'asyncio',
+    'uuid',
+    'opencv-python',
+    'certifi==2023.7.22',
+    'requests',  # nodriver require it
+    'nodriver @ git+https://github.com/yoori/nodriver.git',
+    # < fork with cookie fix, switch to https://github.com/ultrafunkamsterdam/nodriver.git after MR
+    'argparse',
+    'oslex',
+    'jinja2',
+  ] + [  # Server dependecies
+    'fastapi',
+    'uvicorn',
+    'gunicorn'
+  ] + ['xvfbwrapper==0.2.9'] if sys.platform != 'win32' else [] +
+  # < we believe that 'cygwin', 'darwin' are supported in addition to 'linux'
+  ['gunicorn'] if sys.platform not in ['win32', 'cygwin'] else []
+  # < gunicorn use fcntl (supported only at darwin, linux)
+  ,
   include_package_data = True,
   entry_points = {
     'console_scripts': [

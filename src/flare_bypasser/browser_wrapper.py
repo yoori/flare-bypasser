@@ -1,27 +1,29 @@
 import os
 import typing
 import asyncio
-import logging
 import uuid
 import http.cookiejar
 import cv2
 
-import typing
 import nodriver
 
 XVFB_DISPLAY = None
+
 
 """
 Trivial wrapper for browser (driver).
 Allow to localize driver operations implementation and requirements,
 and simplify migration to other driver.
 """
+
+
 class BrowserWrapper(object) :
   _nodriver_driver : nodriver.Browser = None
   _page = None
 
   class FakePosition(object) :
     center = None
+
     def __init__(self, center) :
       self.center = tuple(center)
 
@@ -33,16 +35,16 @@ class BrowserWrapper(object) :
 
     def __init__(self, page : nodriver.Tab, center_coords) :
       super(BrowserWrapper.FakeElement, self).__init__(
-        BrowserWrapper.FakeNode(), # nodriver.cdp.dom.Node
-        page # nodriver.Tab
+        BrowserWrapper.FakeNode(),  # nodriver.cdp.dom.Node
+        page  # nodriver.Tab
       )
       self._position = BrowserWrapper.FakePosition(center_coords)
 
-    def _make_attrs(self) : # override for exclude exception on __init__
+    def _make_attrs(self) :  # override for exclude exception on __init__
       pass
 
     # overrides for call only cdp click send in nodriver.Element.mouse_click
-    async def get_position(self) : 
+    async def get_position(self) :
       return self._position
 
     async def flash(self, duration: typing.Union[float, int] = 0.5):
@@ -62,7 +64,6 @@ class BrowserWrapper(object) :
   @staticmethod
   async def create(proxy = None) :
     BrowserWrapper.start_xvfb_display()
-    # TODO: Pass proxy
     browser_args = []
     if proxy:
       browser_args.append("--proxy-server=" + proxy)
@@ -90,14 +91,13 @@ class BrowserWrapper(object) :
 
   async def select_count(self, css_selector) :
     try :
-      return len(await self._page.select(css_selector, timeout = 0)) #< Select without waiting.
+      return len(await self._page.select(css_selector, timeout = 0))  # Select without waiting.
     except asyncio.TimeoutError :
       return 0
 
   async def get(self, url) :
     # we work only with one page - close all tabs
     for tab_i, tab in enumerate(self._nodriver_driver) :
-      #logging.info("To close tab #" + str(tab_i))
       if tab_i > 0 :
         await tab.close()
     self._page = await self._nodriver_driver.get(url)
@@ -119,9 +119,9 @@ class BrowserWrapper(object) :
 
   async def get_dom(self) :
     res_dom = await self._page.get_content()
-    return (res_dom if res_dom is not None else "") #< nodriver return None sometimes (on error)
+    return (res_dom if res_dom is not None else "")  # nodriver return None sometimes (on error)
 
-  async def get_screenshot(self) : # Return screenshot as cv2 image (numpy array)
+  async def get_screenshot(self) :  # Return screenshot as cv2 image (numpy array)
     tmp_file_path = None
     try :
       while True :
@@ -156,16 +156,16 @@ class BrowserWrapper(object) :
         c.get('name', None),
         c.get('value', None),
         c.get('port', 443),
-        None, # port_specified
+        None,  # port_specified
         c.get('domain', None),
-        None, # domain_specified
-        None, # domain_initial_dot
+        None,  # domain_specified
+        None,  # domain_initial_dot
         c.get('path', '/'),
-        None, # path_specified
+        None,  # path_specified
         c.get('secure', False),
-        None, # discard
-        None, # comment
-        None # comment_url
+        None,  # discard
+        None,  # comment
+        None  # comment_url
       ))
     await self._nodriver_driver.cookies().set_all(cookie_jar)
 

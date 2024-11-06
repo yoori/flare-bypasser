@@ -1,16 +1,19 @@
 import argparse
-import io
 from urllib.request import urlretrieve, urlopen
 import zipfile
 import os
-import re
 import json
 import shutil
+
 
 def fetch_package(download_url):
   return urlretrieve(download_url)[0]
 
-def unzip_package(fp, extract_root = '/', unzip_path = '/tmp/unzip_chrome', extract_sub_directory = ''):
+
+def unzip_package(
+  fp, extract_root = '/', unzip_path = '/tmp/unzip_chrome',
+  extract_sub_directory = ''
+):
   try:
     os.unlink(unzip_path)
   except (FileNotFoundError, OSError):
@@ -21,14 +24,19 @@ def unzip_package(fp, extract_root = '/', unzip_path = '/tmp/unzip_chrome', extr
   with zipfile.ZipFile(fp, mode = "r") as zf:
     zf.extractall(unzip_path)
 
-  shutil.copytree(os.path.join(unzip_path, extract_sub_directory), extract_root, dirs_exist_ok = True)
+  shutil.copytree(
+    os.path.join(unzip_path, extract_sub_directory), extract_root,
+    dirs_exist_ok = True)
   shutil.rmtree(unzip_path)
+
 
 def download_and_install(version_prefix) :
   target_platform = "linux64"
 
   chrome_download_url = None
-  with urlopen("https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json") as conn:
+  with urlopen(
+    "https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json"
+  ) as conn:
     response = conn.read().decode()
   response_json = json.loads(response)
 
@@ -58,18 +66,24 @@ def download_and_install(version_prefix) :
 
   print("Download chrome by url : " + str(chrome_download_url), flush = True)
   extract_root = '/usr/bin/'
-  unzip_package(fetch_package(chrome_download_url), extract_root = extract_root, extract_sub_directory = 'chrome-linux64')
+  unzip_package(
+    fetch_package(chrome_download_url), extract_root = extract_root,
+    extract_sub_directory = 'chrome-linux64')
 
   os.chmod(os.path.join(extract_root, 'chrome'), 0o755)
   os.chmod(os.path.join(extract_root, 'chrome-wrapper'), 0o755)
   os.chmod(os.path.join(extract_root, 'chrome_crashpad_handler'), 0o755)
   os.chmod(os.path.join(extract_root, 'chrome_sandbox'), 0o755)
 
-  os.system("sed -i 's/Google Chrome for Testing/Google Chrome\\x00for Testing/' " + str(extract_root) + "/chrome")
+  os.system(
+    "sed -i 's/Google Chrome for Testing/Google Chrome\\x00for Testing/' " +
+    str(extract_root) + "/chrome")
   return True
+
 
 def main(version_prefix) :
   download_and_install(version_prefix)
+
 
 if __name__ == "__main__" :
   parser = argparse.ArgumentParser(description = 'linux_chrome_installer.')

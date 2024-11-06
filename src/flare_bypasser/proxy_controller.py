@@ -6,11 +6,12 @@ import contextlib
 import oslex
 import jinja2
 
+
 class ProxyController(object) :
   _proxy_cmd_template : jinja2.Template
   _lock : threading.Lock
-  _proxies_by_url : typing.Dict[str, object] #< -> ProxyHolder
-  _proxies_by_port : typing.Dict[int, object] #< -> ProxyHolder
+  _proxies_by_url : typing.Dict[str, object]  # -> ProxyHolder
+  _proxies_by_port : typing.Dict[int, object]  # -> ProxyHolder
 
   class PortBusy(Exception) :
     pass
@@ -19,7 +20,7 @@ class ProxyController(object) :
     pass
 
   class ProxyHolder(object) :
-    _proxy_storage : object #< ProxyController
+    _proxy_storage : object  # ProxyController
     _local_port : int
     _url : str
     _ref_count : int = 0
@@ -48,7 +49,7 @@ class ProxyController(object) :
         self._proxy_storage._close_proxy(self)
 
   class ProxyHolderRef(object) :
-    _proxy_holder : object #< ProxyController.ProxyHolder
+    _proxy_holder : object  # ProxyController.ProxyHolder
 
     def __init__(self, proxy_holder : object) :
       self._proxy_holder = proxy_holder
@@ -78,10 +79,12 @@ class ProxyController(object) :
     def __del__(self) :
       self.release()
 
-  def __init__(self,
+  def __init__(
+    self,
     start_port = 10000,
     end_port = 20000,
-    command = "gost -L=socks5://127.0.0.1:{{LOCAL_PORT}} -F='{{UPSTREAM_URL}}'") :
+    command = "gost -L=socks5://127.0.0.1:{{LOCAL_PORT}} -F='{{UPSTREAM_URL}}'"
+  ) :
     self._proxy_cmd_template = jinja2.Environment().from_string(command)
     self._lock = threading.Lock()
     self._proxies_by_url = {}
@@ -100,7 +103,8 @@ class ProxyController(object) :
       self._proxies_by_url[url] = new_proxy_holder
       self._proxies_by_port[new_proxy_holder_port] = new_proxy_holder
 
-    return ProxyController.ProxyHolderRef(new_proxy_holder) # Start/wait start or simple increase ref.
+    return ProxyController.ProxyHolderRef(new_proxy_holder)
+    # < Start/wait start or simple increase ref.
 
   def opened_proxies_count(self) :
     return len(self._proxies_by_port)
@@ -119,19 +123,24 @@ class ProxyController(object) :
   def _choose_port(self, url) :
     base_port_offset = hash(url) % (self._end_port - self._start_port + 1)
     for port_offset in range(self._end_port - self._start_port + 1) :
-      check_port = self._start_port + (base_port_offset + port_offset) % (self._end_port - self._start_port + 1)
+      check_port = self._start_port + (base_port_offset + port_offset) % (
+        self._end_port - self._start_port + 1)
       if check_port in self._proxies_by_port :
         continue
       if ProxyController._port_is_listen(check_port) :
-        raise ProxyController.PortBusy("Port " + str(check_port) + " dedicated for proxy usage is busy.")
+        raise ProxyController.PortBusy(
+          "Port " + str(check_port) + " dedicated for proxy usage is busy.")
       return check_port
     raise ProxyController.NoPortForListen()
 
   def _start_proxy(self, proxy_holder) :
     # Start proxy process
-    proxy_cmd = self._proxy_cmd_template.render({'LOCAL_PORT' : str(proxy_holder._local_port), 'UPSTREAM_URL' : proxy_holder._url})
+    proxy_cmd = self._proxy_cmd_template.render({
+      'LOCAL_PORT' : str(proxy_holder._local_port),
+      'UPSTREAM_URL' : proxy_holder._url})
     print("Start with: " + str(proxy_cmd))
-    proxy_holder._process = subprocess.Popen(oslex.split(proxy_cmd), stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL)
+    proxy_holder._process = subprocess.Popen(
+      oslex.split(proxy_cmd), stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL)
 
   def _close_proxy(self, proxy_holder) :
     # Close proxy process

@@ -1,6 +1,6 @@
 from flare_bypasser import ProxyController
 
-proxy_controller = ProxyController()
+proxy_controller = ProxyController(command = 'echo "Listening on {{LOCAL_PORT}}"')
 
 with proxy_controller.get_proxy("socks5://127.0.0.1:7777") as proxy1, \
   proxy_controller.get_proxy("socks5://127.0.0.1:7777") as proxy2 : # noqa

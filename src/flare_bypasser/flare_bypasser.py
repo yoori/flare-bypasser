@@ -53,23 +53,24 @@ _CHALLENGE_SELECTORS = [
 _SHORT_TIMEOUT = 1
 _REDIRECT_WAIT_TIMEOUT = 5
 
+
 """
 Request for process, can be extended and some custom fields used in process_command.
 """
+
+
 class Request(object):
   url: str = None
   proxy: dict = None
-  max_timeout: float = 60 # timeout in sec
+  max_timeout: float = 60  # timeout in sec
   cookies: dict = None
   params: dict = None
 
-  def __init__(self, _dict = None):
-    if _dict :
+  def __init__(self, _dict=None):
+    if _dict:
       self.__dict__.update(_dict)
 
-"""
-Response, can be extended and some custom fields used in process_command.
-"""
+
 class Response:
   url: str = None
   cookies: list = None
@@ -80,33 +81,41 @@ class Response:
   def __init__(self, _dict):
     self.__dict__.update(_dict)
 
-class BaseCommandProcessor(object) :
+
+class BaseCommandProcessor(object):
   # preprocess url before solve (for example: can replace url with page content for POST request processing)
   @abc.abstractmethod
   async def preprocess_command(self, req: Request, driver: BrowserWrapper) -> Request:
     return req
 
   @abc.abstractmethod
-  async def process_command(self, res: Response, req: Request, driver: BrowserWrapper
-    ) -> Response:
+  async def process_command(
+    self, res: Response, req: Request, driver: BrowserWrapper
+  ) -> Response:
     return res
+
 
 """
 Standard commands implementations.
 """
-class GetCookiesCommandProcessor(BaseCommandProcessor) :
+
+
+class GetCookiesCommandProcessor(BaseCommandProcessor):
   pass  # Use all default process implementations.
 
-class GetPageCommandProcessor(BaseCommandProcessor) :
-  async def process_command(self, res: Response, req: Request, driver: BrowserWrapper
-    ) -> Response:
+
+class GetPageCommandProcessor(BaseCommandProcessor):
+  async def process_command(
+    self, res: Response, req: Request, driver: BrowserWrapper
+  ) -> Response:
     res.response = await driver.get_dom()
     return res
 
-class PostCommandProcessor(BaseCommandProcessor) :
+
+class PostCommandProcessor(BaseCommandProcessor):
   async def preprocess_command(self, req: Request, driver: BrowserWrapper) -> Request:
     # prepare page with form for emulate POST.
-    if req.params is None or 'postData' not in req.params :
+    if req.params is None or 'postData' not in req.params:
       raise Exception("postData should be defined for POST.")
 
     postData = req.params['postData']
@@ -140,30 +149,35 @@ class PostCommandProcessor(BaseCommandProcessor) :
     req.url = "data:text/html;charset=utf-8," + html_content
     return req
 
-  async def process_command(self, res: Response, req: Request, driver: BrowserWrapper
-    ) -> Response:
+  async def process_command(
+    self, res: Response, req: Request, driver: BrowserWrapper
+  ) -> Response:
     res.response = await driver.get_dom()
     return res
 
-"""
-Solver
-"""
-class Solver(object) :
-  _proxy : str = None
-  _driver : BrowserWrapper = None
-  _command_processors : typing.Dict[str, BaseCommandProcessor] = []
-  _proxy_controller : ProxyController = None
-  _screenshot_i : int = 0
-  _debug : bool = True
 
-  class Exception(Exception) :
+class Solver(object):
+  """
+  Solver
+  """
+  _proxy: str = None
+  _driver: BrowserWrapper = None
+  _command_processors: typing.Dict[str, BaseCommandProcessor] = []
+  _proxy_controller: ProxyController = None
+  _screenshot_i: int = 0
+  _debug: bool = True
+
+  class Exception(Exception):
     step = None
-    def __init__(self, message : str, step : str = None):
+
+    def __init__(self, message: str, step: str = None):
       super().__init__(message)
       self.step = step
 
-  def __init__(self, proxy : str = None, command_processors : typing.Dict[str, BaseCommandProcessor] = {},
-    proxy_controller = None) :
+  def __init__(
+    self, proxy: str = None, command_processors: typing.Dict[str, BaseCommandProcessor] = {},
+    proxy_controller=None
+  ):
     self._proxy = proxy
     self._driver = None
     self._proxy_controller = proxy_controller
@@ -179,16 +193,16 @@ class Solver(object) :
     self._command_processors['make_post'] = make_post_command_processor
     self._command_processors['request.post'] = make_post_command_processor
 
-  async def save_screenshot(self, step_name, image = None, mark_coords = None) :
-    if self._debug :
+  async def save_screenshot(self, step_name, image=None, mark_coords=None):
+    if self._debug:
       screenshot_file_without_ext = str(self._screenshot_i) + '_' + step_name
 
-      if image is not None :
+      if image is not None:
         cv2.imwrite(screenshot_file_without_ext + ".png", image)
-      else :
+      else:
         await self._driver.save_screenshot(screenshot_file_without_ext + ".png")
 
-      if mark_coords :
+      if mark_coords:
         image = cv2.imread(screenshot_file_without_ext + ".png")
         image = cv2.circle(image, mark_coords, 5, (255, 0, 0), 2)
         cv2.imwrite(screenshot_file_without_ext + "_mark.png", image)
@@ -205,37 +219,37 @@ class Solver(object) :
     if req.url is None:
       raise Exception("Parameter 'url' should be defined.")
 
-    try :
+    try:
       async with asyncio.timeout(req.max_timeout):
         res = await self._resolve_challenge(req)
         logging.info("Solve result: " + str(res))
     except asyncio.TimeoutError:
-      raise Exception("Processing timeout (max_timeout = " + str(req.max_timeout) + ")")
+      raise Exception("Processing timeout (max_timeout=" + str(req.max_timeout) + ")")
     return res
 
   async def _resolve_challenge(self, req: Request) -> Response:
     start_time = datetime.datetime.now()
     step = 'start'
     try:
-      user_data_dir = os.environ.get('USER_DATA', None)
       use_proxy = (req.proxy if req.proxy else self._proxy)
       proxy_holder = None
 
       step = 'proxy init'
-      if use_proxy is not None and '@' in use_proxy :
-        if not self._proxy_controller :
+      if use_proxy is not None and '@' in use_proxy:
+        if not self._proxy_controller:
           raise Solver.Exception("For use proxy with authorization you should pass proxy_controller into c-tor")
         proxy_holder = self._proxy_controller.get_proxy(use_proxy)
         use_proxy = "socks5://127.0.0.1:" + str(proxy_holder.local_port())
-      else :
+      else:
         proxy_holder = contextlib.nullcontext()
 
       step = 'solving'
-      with proxy_holder :
-        try :
+      with proxy_holder:
+        try:
           self._driver = await BrowserWrapper.create(use_proxy)
-          logging.info('New instance of webdriver has been created to perform the request (proxy=' +
-            str(use_proxy) + '), timeout = ' + str(req.max_timeout))
+          logging.info(
+            'New instance of webdriver has been created to perform the request (proxy=' +
+            str(use_proxy) + '), timeout=' + str(req.max_timeout))
           return await self._resolve_challenge_impl(req, start_time)
         finally:
           logging.info('Close webdriver')
@@ -246,27 +260,31 @@ class Solver(object) :
     except Solver.Exception as e:
       error_message = "Error solving the challenge. On step '" + str(e.step) + "': " + str(e).replace('\n', '\\n')
       logging.error(error_message)
-      raise Solver.Exception(error_message, step = e.step)
+      raise Solver.Exception(error_message, step=e.step)
     except Exception as e:
       error_message = "Error solving the challenge. On step '" + step + "': " + str(e).replace('\n', '\\n')
       logging.error(error_message)
       raise Solver.Exception(error_message)
 
-  async def _check_challenge(self) :
+  async def _check_challenge(self):
     driver = self._driver
     page_title = await driver.title()
 
     # find access denied titles
-    for title in _ACCESS_DENIED_TITLES :
+    for title in _ACCESS_DENIED_TITLES:
       if title == page_title:
-        raise Exception('Cloudflare has blocked this request. '
-          'Probably your IP is banned for this site, check in your web browser.')
+        raise Exception(
+          'Cloudflare has blocked this request. '
+          'Probably your IP is banned for this site, check in your web browser.'
+        )
 
     # find access denied selectors
     for selector in _ACCESS_DENIED_SELECTORS:
-      if (await driver.select_count(selector) > 0) :
-        raise Exception('Cloudflare has blocked this request. '
-          'Probably your IP is banned for this site, check in your web browser.')
+      if (await driver.select_count(selector) > 0):
+        raise Exception(
+          'Cloudflare has blocked this request. '
+          'Probably your IP is banned for this site, check in your web browser.'
+        )
 
     # find challenge by title
     challenge_found = False
@@ -286,13 +304,50 @@ class Solver(object) :
 
     return challenge_found
 
-  async def _resolve_challenge_impl(self, req: Request, start_time : datetime.datetime) -> Response:
+  async def _challenge_wait_and_click_loop(self):
+    attempt = 0
+
+    while True:
+      logging.info("Challenge step #" + str(attempt))
+      await self.save_screenshot('attempt')
+
+      # check that challenge present (wait when it will disappear after click)
+      challenge_found = await self._check_challenge()
+      if not challenge_found:
+        logging.info("Challenge disappeared on step #" + str(attempt))
+        break
+
+      # check that need to click,
+      # get screenshot of full page (all elements is in shadowroot)
+      # clicking can be required few times.
+      page_image = await self._driver.get_screenshot()
+      click_coord = Solver._get_flare_click_point(page_image)
+      if click_coord:
+        logging.info("Verify checkbot found, click coordinates: " + str(click_coord))
+        await self.save_screenshot('to_verify_click', image=page_image, mark_coords=click_coord)
+        # recheck that challenge present - we can be already redirected and
+        # need to exclude click on result page
+        challenge_found = await self._check_challenge()
+        if not challenge_found:
+          logging.info("Challenge disappeared on step #" + str(attempt))
+          break
+
+        logging.info("Click challenge by coords: " + str(click_coord[0]) + ", " + str(click_coord[1]))
+        await self._driver.click_coords(click_coord)
+        await asyncio.sleep(1)
+
+        await self.save_screenshot('after_verify_click')
+
+      attempt = attempt + 1
+      await asyncio.sleep(_SHORT_TIMEOUT)
+
+  async def _resolve_challenge_impl(self, req: Request, start_time: datetime.datetime) -> Response:
     step = 'solving'
-    try :
+    try:
       res = Response({})
 
-      if req.cmd not in self._command_processors :
-        raise Exception("Unknown command : " + req.cmd)
+      if req.cmd not in self._command_processors:
+        raise Exception("Unknown command: " + req.cmd)
 
       command_processor = self._command_processors[req.cmd]
       assert command_processor
@@ -301,27 +356,31 @@ class Solver(object) :
       preprocess_res = await command_processor.preprocess_command(copy.deepcopy(req), self._driver)
 
       step = 'parse command preprocessing result'
-      open_url = True # preprocess_command can say, that page opening isn't required (it opened it already).
-      if (isinstance(preprocess_res, list) or isinstance(preprocess_res, tuple)) and len(preprocess_res) > 1 :
+      open_url = True
+      # < preprocess_command can say, that page opening isn't required (it opened it already).
+      if (
+        (isinstance(preprocess_res, list) or isinstance(preprocess_res, tuple)) and
+        len(preprocess_res) > 1
+      ):
         preprocessed_req = preprocess_res[0]
         open_url = preprocess_res[1]
-      else :
+      else:
         preprocessed_req = preprocess_res
 
       step = 'navigate to url'
-      if open_url :
+      if open_url:
         # navigate to the page
         logging.debug(f'Navigating to... {req.url}')
         await self._driver.get(preprocessed_req.url)
 
-      logging.debug(f'To make screenshot')
+      logging.debug('To make screenshot')
       await self.save_screenshot('evil_logic')
 
       step = 'set cookies'
 
       # set cookies if required
       if preprocessed_req.cookies is not None and len(preprocessed_req.cookies) > 0:
-        logging.debug(f'Setting cookies...')
+        logging.debug('Setting cookies...')
         await self._driver.set_cookies(preprocessed_req.cookies)
         await self._driver.get(preprocessed_req.url)
 
@@ -331,51 +390,16 @@ class Solver(object) :
 
       await self.save_screenshot('after_challenge_check')
 
-      if not challenge_found :
+      if not challenge_found:
         await self.save_screenshot('no_challenge_found')
         logging.info("Challenge not detected!")
         res.message = "Challenge not detected!"
-      else : # first challenge found
+      else:  # first challenge found
         step = 'solve challenge'
         logging.info("Challenge detected, to solve it")
 
-        attempt = 0
-
-        while True:
-          logging.info("Challenge step #" + str(attempt))
-
-          await self.save_screenshot('attempt')
-
-          # check that challenge present (wait when it will disappear after click)
-          challenge_found = await self._check_challenge()
-          if not challenge_found :
-            logging.info("Challenge disappeared on step #" + str(attempt))
-            break
-
-          # check that need to click,
-          # get screenshot of full page (all elements is in shadowroot)
-          # clicking can be required few times.
-          page_image = await self._driver.get_screenshot()
-          click_coord = Solver._get_flare_click_point(page_image)
-          if click_coord :
-            logging.info("Verify checkbot found, click coordinates: " + str(click_coord))
-            await self.save_screenshot('to_verify_click', image = page_image, mark_coords = click_coord)
-            # recheck that challenge present - we can be already redirected and
-            # need to exclude click on result page
-            challenge_found = await self._check_challenge()
-            if not challenge_found :
-              logging.info("Challenge disappeared on step #" + str(attempt))
-              break
-
-            logging.info("Click challenge by coords: " + str(click_coord[0]) + ", " + str(click_coord[1]))
-            await self._driver.click_coords(click_coord)
-            await asyncio.sleep(1)
-
-            res.message = "Challenge solved!"  # challenge found and solved once (as minimum)
-            await self.save_screenshot('after_verify_click')
-
-          attempt = attempt + 1
-          await asyncio.sleep(_SHORT_TIMEOUT)
+        await self._challenge_wait_and_click_loop()
+        res.message = "Challenge solved!"  # expect exception if challenge isn't solved
 
         logging.info("Challenge solving finished")
         await self.save_screenshot('solving_finish')
@@ -397,37 +421,35 @@ class Solver(object) :
       logging.info('Solving finished')
 
       return res
-    except Exception as e :
-      raise Solver.Exception(str(e), step = step)
+    except Exception as e:
+      raise Solver.Exception(str(e), step=step)
 
   @staticmethod
-  def _get_flare_click_point(image) :
+  def _get_flare_rect_contours_(image):
     image_height, image_width, _ = image.shape
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     ret, mask = cv2.threshold(gray_image, 240, 255, 0)
     # < we can use 230 + closing by filter for more accuracy, but it require much CPU.
 
-    #cv2.imwrite('masked_image.png', mask) # Check that mask contains outer rect contour if colors will be changed
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     rect_contours = []
-    for c in contours :
+    for c in contours:
       x, y, w, h = cv2.boundingRect(c)
 
       # ignore small rectangles
-      if w < 6 or h < 6 :
+      if w < 6 or h < 6:
         continue
 
       sq = w * h / (image_height * image_width)
 
       # ignore very big rectangles
-      if sq > 0.5 :
+      if sq > 0.5:
         continue
 
       # calculate area difference
       rect_area = w * h
       contour_area = cv2.contourArea(c)
-      diff_area = abs(rect_area - contour_area)
       # eval iou with (with undestanding that contour_area inside rect_area)
       iou = contour_area / rect_area
 
@@ -437,21 +459,27 @@ class Solver(object) :
 
     # Here 2 rect contours, each can be present as one or 2 contours
     """
-    debug_image = image.copy()
-    for rc in rect_contours :
-      debug_image = cv2.drawContours(debug_image, [rc[1]], -1, (255, 0, 0), 1)
+    debug_image=image.copy()
+    for rc in rect_contours:
+      debug_image=cv2.drawContours(debug_image, [rc[1]], -1, (255, 0, 0), 1)
     cv2.imwrite('debug_rect_contours.png', debug_image)
     """
 
-    rect_contours = sorted(rect_contours, key = lambda c_pair: c_pair[0])
+    return rect_contours
 
-    # pack low distance contours (one rect can be present as 2 contours : inner, outer)
+  @staticmethod
+  def _get_flare_click_point(image):
+    rect_contours = Solver._get_flare_rect_contours_(image)
+
+    rect_contours = sorted(rect_contours, key=lambda c_pair: c_pair[0])
+
+    # pack low distance contours (one rect can be present as 2 contours: inner, outer)
     # remove buggest contour
     res_rect_contours = []
     prev_c_pair = None
 
-    for c_pair in rect_contours : # go from lowest to biggest
-      if prev_c_pair is None or abs(c_pair[0] - prev_c_pair[0]) / c_pair[0] > 0.5 :
+    for c_pair in rect_contours:  # go from lowest to biggest
+      if prev_c_pair is None or abs(c_pair[0] - prev_c_pair[0]) / c_pair[0] > 0.5:
         res_rect_contours.append(c_pair)
         prev_c_pair = c_pair
 
@@ -459,32 +487,31 @@ class Solver(object) :
     # rect contours sorted by area ascending
 
     """
-    debug_image = image.copy()
-    for rc in rect_contours :
+    debug_image=image.copy()
+    for rc in rect_contours:
       print("C: " + str(rc[0]))
-      debug_image = cv2.drawContours(debug_image, [rc[1]], -1, (255, 0, 0), 1)
+      debug_image=cv2.drawContours(debug_image, [rc[1]], -1, (255, 0, 0), 1)
     cv2.imwrite('debug_packed_rect_contours.png', debug_image)
     """
 
-    # Now we should find two rect contours (one inside other) with ratio 1-5%, (now I see : 0.0213)
+    # Now we should find two rect contours (one inside other) with ratio 1-5%, (now I see: 0.0213).
     if len(rect_contours) > 1:
-      for area1_index in range(len(rect_contours)) :
+      for area1_index in range(len(rect_contours)):
         area1 = rect_contours[area1_index][0]
-        for check_c in rect_contours[area1_index + 1:] :
+        for check_c in rect_contours[area1_index + 1:]:
           area2 = check_c[0]
           area_ratio = area1 / area2
-          # Check area ratio and that area1 inside area2
-          if area_ratio > 0.01 and area_ratio < 0.05 :
-            # Found !
+          # Check area ratio and that area1 inside area2.
+          if area_ratio > 0.01 and area_ratio < 0.05:
+            # Checkbox found.
             c1_x, c1_y, c1_w, c1_h = cv2.boundingRect(rect_contours[area1_index][1])
             c2_x, c2_y, c2_w, c2_h = cv2.boundingRect(check_c[1])
-            if c1_x >= c2_x and c1_x <= c2_x + c2_w and c1_y >= c2_y and c1_y <= c2_y + c2_h :
-              #print("A1: x = " + str(x) + ", y = " + str(y) + ", w = " + str(w) + ", h = " + str(h))
+            if c1_x >= c2_x and c1_x <= c2_x + c2_w and c1_y >= c2_y and c1_y <= c2_y + c2_h:
               x2, y2, w2, h2 = cv2.boundingRect(check_c[1])
-              #print("A2: x = " + str(x2) + ", y = " + str(y2) + ", w = " + str(w2) + ", h = " + str(h2))
               return [random.randint(c1_x + 2, c1_x + c1_w - 2), random.randint(c1_y + 2, c1_y + c1_h - 2)]
 
     return None
+
 
 # fix ssl certificates for compiled binaries
 # https://github.com/pyinstaller/pyinstaller/issues/7229
@@ -493,10 +520,11 @@ os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
 os.environ["SSL_CERT_FILE"] = certifi.where()
 
 if __name__ == '__main__':
-  sys.stdout.reconfigure(encoding = "utf-8")
-  logging.basicConfig(format = '%(asctime)s [%(name)s] [%(levelname)s] : %(message)s',
-    handlers = [logging.StreamHandler(sys.stdout)],
-    level = logging.INFO)
+  sys.stdout.reconfigure(encoding="utf-8")
+  logging.basicConfig(
+    format='%(asctime)s [%(name)s] [%(levelname)s]: %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)],
+    level=logging.INFO)
 
   req = Request()
   req.url = 'https://knopka.ashoo.id'

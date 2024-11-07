@@ -43,7 +43,6 @@ ARG CHECK_SYSTEM=false
 ARG CHROME_DISABLE_GPU=false
 
 ENV PACKAGES_DIR=/packages
-ENV CHROME_VERSION=${CHROME_VERSION}
 ENV CHECK_SYSTEM=${CHECK_SYSTEM}
 ENV CHROME_DISABLE_GPU=${CHROME_DISABLE_GPU}
 
@@ -94,8 +93,6 @@ RUN pip install flare_bypasser/
 COPY rootfs /
 
 USER ${UID}
-
-ENV PYTHONPATH "${PYTHONPATH}:/opt/flare_bypasser/lib/"
 
 # dumb-init avoids zombie chromium processes
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]

@@ -94,7 +94,7 @@ CURRENT_UID=$(id -u)
 CURRENT_GID=$(id -g)
 
 export WORKSPACE_ROOT=/opt/flare_bypasser/var/
-export PYTHONPATH=$PYTHONPATH:/opt/flare_bypasser/extensions/
+export PYTHONPATH=$PYTHONPATH:/opt/flare_bypasser/lib/:/opt/flare_bypasser/extensions/
 
 sudo -n find "$WORKSPACE_ROOT" -exec chown "$CURRENT_UID:$CURRENT_GID" {} \;
 mkdir -p "$WORKSPACE_ROOT/log"

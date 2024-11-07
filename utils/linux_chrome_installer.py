@@ -32,8 +32,15 @@ def unzip_package(
   shutil.rmtree(unzip_path)
 
 
-def download_and_install(version_prefix = None, install_root = None):
-  target_platform = "linux64"
+def download_and_install(version_prefix = None, install_root = None, arch = 'x86_64'):
+  if arch == 'x86_64':
+    target_platform = "linux64"
+  elif arch == 'aarch64' :  # < Raspberry, ARM based MacOS
+    target_platform = 'mac-arm64'
+  elif arch == 'i386':  # < Intel based MacOS
+    target_platform = 'mac-x64'
+  else :
+    raise Exception("Unknown platform: " + str(arch))
 
   chrome_download_url = None
   with urlopen(
@@ -86,12 +93,14 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='linux_chrome_installer.')
   parser.add_argument("-v", "--version-prefix", type=str, default='120.')
   parser.add_argument("-i", "--install-root", type=str, default='/usr/bin')
+  parser.add_argument("--arch", type=str, default='x86_64')
   args = parser.parse_args()
 
   try:
     res = download_and_install(
       version_prefix = args.version_prefix,
-      install_root = args.install_root
+      install_root = args.install_root,
+      arch = args.arch
     )
   except Exception as e:
     logging.error("Can't install chrome: " + str(e))

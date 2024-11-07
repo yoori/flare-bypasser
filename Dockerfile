@@ -29,7 +29,8 @@ RUN ./gost-install.sh --install
 COPY utils/linux_chrome_installer.py /opt/flare_bypasser/bin/linux_chrome_installer.py
 RUN python3 /opt/flare_bypasser/bin/linux_chrome_installer.py \
   --version-prefix="$CHROME_VERSION" \
-  --install-root=/opt/flare_bypasser/installed_chrome/ || \
+  --install-root=/opt/flare_bypasser/installed_chrome/ \
+  --arch=$(arch) || \
   { echo "Can't install chrome (required version '$CHROME_VERSION')" >&2 ; exit 1 ; }
 
 

@@ -82,8 +82,8 @@ chrome_diagnostic() {
     cat "$CHROME_OUTPUT_FILE" >&2
   fi
 
-  kill "$XVFB_PID"
-  kill "$CHROME_PID"
+  kill "$XVFB_PID" 2>/dev/null
+  kill "$CHROME_PID" 2>/dev/null
 
   return $EXIT_CODE
 }

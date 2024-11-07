@@ -38,9 +38,11 @@ FROM python:${PYTHON_VERSION}-slim-bullseye
 ARG UID=1111
 ARG GID=0
 ARG UNAME=flare_bypasser
+ARG CHECK_SYSTEM=false
 
 ENV PACKAGES_DIR=/packages
 ENV CHROME_VERSION=${CHROME_VERSION}
+ENV CHECK_SYSTEM=${CHECK_SYSTEM}
 
 # Copy dummy packages
 COPY --from=builder ${PACKAGES_DIR} ${PACKAGES_DIR}

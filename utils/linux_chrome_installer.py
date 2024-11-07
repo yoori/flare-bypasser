@@ -76,7 +76,7 @@ def download_and_install(version_prefix = None, install_root = None, arch = 'x86
   extract_root = install_root if install_root is not None else '/usr/bin/'
   unzip_package(
     fetch_package(chrome_download_url), extract_root=extract_root,
-    extract_sub_directory='chrome-linux64')
+    extract_sub_directory=('chrome-' + target_platform))
 
   os.chmod(os.path.join(extract_root, 'chrome'), 0o755)
   os.chmod(os.path.join(extract_root, 'chrome-wrapper'), 0o755)

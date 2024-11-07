@@ -70,8 +70,8 @@ RUN dpkg -i ${PACKAGES_DIR}/*.deb \
     xvfb dumb-init procps curl vim xauth sudo git \
   # Remove temporary files and hardware decoding libraries
   && rm -rf /var/lib/apt/lists/* \
-  && rm -f /usr/lib/x86_64-linux-gnu/libmfxhw* \
-  && rm -f /usr/lib/x86_64-linux-gnu/mfx/* \
+  && find /usr/lib/ -type f -name 'libmfxhw*' -delete \
+  && find /usr/lib/ -type d -name mfx -exec rm -rf {} \; \
   && mkdir -p /app/bin/
 
 RUN mkdir -p "/app/.config/chromium/Crash Reports/pending"

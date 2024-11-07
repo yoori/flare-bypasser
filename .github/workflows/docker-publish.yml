@@ -29,7 +29,7 @@ jobs:
         include:
           - builder: ubuntu-latest
             platform: linux/amd64
-          - builder: macos-latest
+          - builder: ubuntu-latest
             platform: linux/arm64
 
     runs-on: ${{ matrix.builder }}

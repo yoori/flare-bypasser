@@ -1,14 +1,14 @@
+import os
+import shutil
+import logging
+import json
+import zipfile
 import argparse
 from urllib.request import urlretrieve, urlopen
-import zipfile
-import os
-import json
-import shutil
 
 
 def fetch_package(download_url):
   return urlretrieve(download_url)[0]
-
 
 def unzip_package(
   fp, extract_root='/', unzip_path='/tmp/unzip_chrome',
@@ -30,7 +30,7 @@ def unzip_package(
   shutil.rmtree(unzip_path)
 
 
-def download_and_install(version_prefix):
+def download_and_install(version_prefix = None, install_root = None):
   target_platform = "linux64"
 
   chrome_download_url = None
@@ -61,11 +61,10 @@ def download_and_install(version_prefix):
             break
 
   if chrome_download_url is None:
-    print("Can't find download urls")
-    return False
+    raise Exception("Can't find download urls")
 
   print("Download chrome by url: " + str(chrome_download_url), flush=True)
-  extract_root = '/usr/bin/'
+  extract_root = install_root if install_root is not None else '/usr/bin/'
   unzip_package(
     fetch_package(chrome_download_url), extract_root=extract_root,
     extract_sub_directory='chrome-linux64')
@@ -81,13 +80,15 @@ def download_and_install(version_prefix):
   return True
 
 
-def main(version_prefix):
-  download_and_install(version_prefix)
-
-
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='linux_chrome_installer.')
   parser.add_argument("-v", "--version-prefix", type=str, default='120.')
+  parser.add_argument("-i", "--install-root", type=str, default='/usr/bin')
   args = parser.parse_args()
 
-  main(args.version_prefix)
+  try:
+    res = download_and_install(
+      version_prefix = args.version_prefix,
+      install_root = args.install_root)
+  except Exception as e :
+    sys.exit(1)

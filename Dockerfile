@@ -2,6 +2,8 @@ ARG PYTHON_VERSION=3.11
 
 FROM python:${PYTHON_VERSION}-slim-bullseye AS builder
 
+ARG CHROME_VERSION=131
+
 WORKDIR /app/
 
 ENV PACKAGES_DIR=/packages
@@ -24,10 +26,15 @@ RUN apt-get install -y --no-install-recommends curl  # gost-install.sh requireme
 COPY utils/gost-install.sh ./gost-install.sh
 RUN ./gost-install.sh --install
 
+COPY utils/linux_chrome_installer.py /opt/flare_bypasser/bin/linux_chrome_installer.py
+RUN python3 /opt/flare_bypasser/bin/linux_chrome_installer.py \
+  --version-prefix="$CHROME_VERSION" \
+  --install-root=/opt/flare_bypasser/installed_chrome/ || \
+  { echo "Can't install chrome (required version '$CHROME_VERSION')" >&2 ; exit 1 ; }
+
 
 FROM python:${PYTHON_VERSION}-slim-bullseye
 
-ARG CHROME_VERSION=131
 ARG UID=1111
 ARG GID=0
 ARG UNAME=flare_bypasser
@@ -38,6 +45,9 @@ ENV CHROME_VERSION=${CHROME_VERSION}
 # Copy dummy packages
 COPY --from=builder ${PACKAGES_DIR} ${PACKAGES_DIR}
 COPY --from=builder /usr/local/bin/gost /usr/local/bin/gost
+
+# Copy installed chrome
+COPY --from=builder /opt/flare_bypasser/installed_chrome /usr/bin/
 
 # Install dependencies and create user
 # You can test Chromium running this command inside the container:
@@ -72,8 +82,6 @@ RUN echo '%sudo ALL=(ALL:ALL) NOPASSWD:ALL' >/etc/sudoers.d/nopasswd \
 WORKDIR /app
 
 RUN apt-get update && apt install -y python3-opencv
-
-COPY utils/linux_chrome_installer.py /opt/flare_bypasser/bin/linux_chrome_installer.py
 
 COPY . flare_bypasser
 RUN pip install flare_bypasser/

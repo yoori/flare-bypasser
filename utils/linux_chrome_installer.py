@@ -1,4 +1,5 @@
 import os
+import sys
 import shutil
 import logging
 import json
@@ -9,6 +10,7 @@ from urllib.request import urlretrieve, urlopen
 
 def fetch_package(download_url):
   return urlretrieve(download_url)[0]
+
 
 def unzip_package(
   fp, extract_root='/', unzip_path='/tmp/unzip_chrome',
@@ -89,6 +91,8 @@ if __name__ == "__main__":
   try:
     res = download_and_install(
       version_prefix = args.version_prefix,
-      install_root = args.install_root)
-  except Exception as e :
+      install_root = args.install_root
+    )
+  except Exception as e:
+    logging.error("Can't install chrome: " + str(e))
     sys.exit(1)

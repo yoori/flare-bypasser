@@ -230,10 +230,10 @@ class Solver(object):
     return res
 
   async def _resolve_challenge(self, req: Request) -> Response:
-    start_time = datetime.datetime.now()
+    start_time: datetime.datetime = datetime.datetime.now()
     step = 'start'
     try:
-      use_proxy = (req.proxy if req.proxy else self._proxy)
+      use_proxy: str = (req.proxy if req.proxy else self._proxy)
       proxy_holder = None
 
       step = 'proxy init'
@@ -245,10 +245,12 @@ class Solver(object):
       else:
         proxy_holder = contextlib.nullcontext()
 
-      step = 'solving'
       with proxy_holder:
         try:
-          self._driver = await BrowserWrapper.create(use_proxy, disable_gpu = self._disable_gpu)
+          step = 'browser init'
+          self._driver: BrowserWrapper = await BrowserWrapper.create(
+            use_proxy, disable_gpu = self._disable_gpu
+          )
           logging.info(
             'New instance of webdriver has been created to perform the request (proxy=' +
             str(use_proxy) + '), timeout=' + str(req.max_timeout))
@@ -260,11 +262,19 @@ class Solver(object):
             self._driver = None
             logging.debug('A used instance of webdriver has been destroyed')
     except Solver.Exception as e:
-      error_message = "Error solving the challenge. On step '" + str(e.step) + "': " + str(e).replace('\n', '\\n')
+      error_message = (
+        "Error solving the challenge. On platform " + str(sys.platform) +
+        " at step '" + str(e.step) + "': " +
+        str(e).replace('\n', '\\n')
+      )
       logging.error(error_message)
       raise Solver.Exception(error_message, step=e.step)
     except Exception as e:
-      error_message = "Error solving the challenge. On step '" + step + "': " + str(e).replace('\n', '\\n')
+      error_message = (
+        "Error solving the challenge. On platform " + str(sys.platform) +
+        " at step '" + step + "': " +
+        str(e).replace('\n', '\\n')
+      )
       logging.error(error_message)
       raise Solver.Exception(error_message)
 

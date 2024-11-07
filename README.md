@@ -21,7 +21,7 @@ already included within the image.
 
 We provide a `docker-compose.yml` configuration file. Clone this repository and execute
 `docker compose up -d` to start
-the container. Http endpoint will be available after little delay (5-15 sec), because container install chrome of required version on start.
+the container.
 
 ### From github as pip package
 > **Warning**

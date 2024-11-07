@@ -1,4 +1,5 @@
 import os
+import sys
 import typing
 import asyncio
 import uuid
@@ -55,11 +56,12 @@ class BrowserWrapper(object):
 
   @staticmethod
   def start_xvfb_display():
-    global XVFB_DISPLAY
-    if XVFB_DISPLAY is None:
-      from xvfbwrapper import Xvfb
-      XVFB_DISPLAY = Xvfb()
-      XVFB_DISPLAY.start()
+    if sys.platform != 'win32':
+      global XVFB_DISPLAY
+      if XVFB_DISPLAY is None:
+        from xvfbwrapper import Xvfb
+        XVFB_DISPLAY = Xvfb()
+        XVFB_DISPLAY.start()
 
   @staticmethod
   async def create(proxy = None, disable_gpu = False):
@@ -67,11 +69,14 @@ class BrowserWrapper(object):
     browser_args = []
     if proxy:
       browser_args.append("--proxy-server=" + proxy)
-    if disable_gpu :
+    if disable_gpu:
       browser_args += [
         "--disable-gpu",
         "--disable-software-rasterizer"
       ]
+    if sys.platform == 'win32':
+      browser_args += ["--headless"]
+
     nodriver_driver = await nodriver.start(
       sandbox=False,
       browser_args=browser_args

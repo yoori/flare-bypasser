@@ -40,6 +40,7 @@ solver_args = {
   'disable_gpu': False
 }
 
+
 class HandleCommandResponseSolution(pydantic.BaseModel):
   status: str
   url: str
@@ -390,7 +391,7 @@ def server_run():
       end_port=args.proxy_listen_end_port,
       command=args.proxy_command)
 
-    if args.disable_gpu :
+    if args.disable_gpu:
       solver_args['disable_gpu'] = True
 
     if USE_GUNICORN:

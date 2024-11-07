@@ -7,7 +7,7 @@ name = 'flare-bypasser'
 setup(
   name='flare-bypasser',
   python_requires='>= 3.9',
-  version='0.1.24',
+  version='0.1.25',
   packages=["flare_bypasser"],
   package_dir={
     "": ".",

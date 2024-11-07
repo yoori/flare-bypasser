@@ -4,6 +4,7 @@ services:
       args:
         CHROME_VERSION: '130.'
         UID: 1001
+        # PYTHON_VERSION: 3.11
       context: .
       dockerfile: Dockerfile
     container_name: flare-bypasser

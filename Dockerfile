@@ -1,4 +1,6 @@
-FROM python:3.11-slim-bullseye AS builder
+ARG PYTHON_VERSION=3.11
+
+FROM python:${PYTHON_VERSION}-slim-bullseye AS builder
 
 WORKDIR /app/
 
@@ -23,7 +25,7 @@ COPY utils/gost-install.sh ./gost-install.sh
 RUN ./gost-install.sh --install
 
 
-FROM python:3.11-slim-bullseye
+FROM python:${PYTHON_VERSION}-slim-bullseye
 
 ARG CHROME_VERSION=131
 ARG UID=1111

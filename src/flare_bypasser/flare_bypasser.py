@@ -164,6 +164,7 @@ class Solver(object):
   _driver: BrowserWrapper = None
   _command_processors: typing.Dict[str, BaseCommandProcessor] = []
   _proxy_controller: ProxyController = None
+  _disable_gpu: bool = False
   _screenshot_i: int = 0
   _debug: bool = True
 
@@ -176,7 +177,8 @@ class Solver(object):
 
   def __init__(
     self, proxy: str = None, command_processors: typing.Dict[str, BaseCommandProcessor] = {},
-    proxy_controller=None
+    proxy_controller=None,
+    disable_gpu=False
   ):
     self._proxy = proxy
     self._driver = None
@@ -192,6 +194,7 @@ class Solver(object):
     make_post_command_processor = PostCommandProcessor()
     self._command_processors['make_post'] = make_post_command_processor
     self._command_processors['request.post'] = make_post_command_processor
+    self._disable_gpu = disable_gpu
 
   async def save_screenshot(self, step_name, image=None, mark_coords=None):
     if self._debug:
@@ -245,7 +248,7 @@ class Solver(object):
       step = 'solving'
       with proxy_holder:
         try:
-          self._driver = await BrowserWrapper.create(use_proxy)
+          self._driver = await BrowserWrapper.create(use_proxy, disable_gpu = self._disable_gpu)
           logging.info(
             'New instance of webdriver has been created to perform the request (proxy=' +
             str(use_proxy) + '), timeout=' + str(req.max_timeout))

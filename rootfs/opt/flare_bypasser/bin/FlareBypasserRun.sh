@@ -118,7 +118,12 @@ then
   EXTENSION_MODULES_PARAM="--extensions $EXTENSION_MODULES"
 fi
 
+ADD_PARAMS=""
+if [ "$CHROME_DISABLE_GPU" = true ] ; then
+  ADD_PARAMS="$ADD_PARAMS --disable-gpu"
+fi
+
 echo "Run server, extensions: $EXTENSION_MODULES, chrome: $(/usr/bin/chrome --version)"
 
-flare_bypass_server -b 0.0.0.0:8080 $EXTENSION_MODULES_PARAM 2>&1 | \
+flare_bypass_server -b 0.0.0.0:8080 $EXTENSION_MODULES_PARAM $ADD_PARAMS 2>&1 | \
   tee "$WORKSPACE_ROOT/log/flare_bypass_server.log"

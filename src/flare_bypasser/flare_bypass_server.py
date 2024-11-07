@@ -34,9 +34,11 @@ Examples: socks5://1.1.1.1:2000, http://user:password@1.1.1.1:8080.
 If you use proxy with authorization and use flare-bypasser as package, please,
 read instructions - need to install gost."""
 
-custom_command_processors = {}
-proxy_controller = None
-
+solver_args = {
+  'command_processors': {},
+  'proxy_controller': None,
+  'disable_gpu': False
+}
 
 class HandleCommandResponseSolution(pydantic.BaseModel):
   status: str
@@ -73,12 +75,10 @@ async def process_solve_request(
     solve_request.proxy = proxy
     solve_request.params = params
 
-    global custom_command_processors
-    global proxy_controller
+    global solver_args
     solver = flare_bypasser.Solver(
       proxy=proxy,
-      command_processors=custom_command_processors,
-      proxy_controller=proxy_controller)
+      **solver_args)
     solve_response = await solver.solve(solve_request)
 
     return HandleCommandResponse(
@@ -357,6 +357,8 @@ def server_run():
       "--proxy-command", type=str,
       default="gost -L=socks5://127.0.0.1:{{LOCAL_PORT}} -F='{{UPSTREAM_URL}}'"
     )
+    parser.add_argument("--disable-gpu", action='store_true')
+    parser.set_defaults(disable_gpu=False)
     args, unknown_args = parser.parse_known_args()
     try:
       host, port = args.bind.split(':')
@@ -364,29 +366,32 @@ def server_run():
       print("Invalid 'bind' argument value: " + str(args.bind), file=sys.stderr, flush=True)
       sys.exit(1)
 
+    global solver_args
+
     # FLARE_BYPASS_COMMANDPROCESSORS format: <command>:<module>.<class>
     # class should have default constructor (without parameters)
     custom_command_processors_str = os.environ.get('FLARE_BYPASS_COMMANDPROCESSORS', None)
     if custom_command_processors_str:
-      global custom_command_processors
-      custom_command_processors.update(
+      solver_args['command_processors'].update(
         parse_class_command_processors(custom_command_processors_str))
 
     if args.extensions:
       for extension in args.extensions:
         # Expect that extension element has format: <module>.<method>
-        custom_command_processors.update(
+        solver_args['command_processors'].update(
           parse_entrypoint_command_processors(extension))
 
     sys.argv = [re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])]
     sys.argv += unknown_args
 
     # Init ProxyController
-    global proxy_controller
-    proxy_controller = flare_bypasser.proxy_controller.ProxyController(
+    solver_args['proxy_controller'] = flare_bypasser.proxy_controller.ProxyController(
       start_port=args.proxy_listen_start_port,
       end_port=args.proxy_listen_end_port,
       command=args.proxy_command)
+
+    if args.disable_gpu :
+      solver_args['disable_gpu'] = True
 
     if USE_GUNICORN:
       sys.argv += ['-b', args.bind]

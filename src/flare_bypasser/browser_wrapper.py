@@ -62,11 +62,16 @@ class BrowserWrapper(object):
       XVFB_DISPLAY.start()
 
   @staticmethod
-  async def create(proxy=None):
+  async def create(proxy = None, disable_gpu = False):
     BrowserWrapper.start_xvfb_display()
     browser_args = []
     if proxy:
       browser_args.append("--proxy-server=" + proxy)
+    if disable_gpu :
+      browser_args += [
+        "--disable-gpu",
+        "--disable-software-rasterizer"
+      ]
     nodriver_driver = await nodriver.start(
       sandbox=False,
       browser_args=browser_args

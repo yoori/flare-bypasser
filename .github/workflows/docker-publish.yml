@@ -24,8 +24,16 @@ env:
 
 jobs:
   build:
+    strategy:
+      matrix:
+        include:
+          - builder: ubuntu-latest
+            platform: linux/amd64
+          - builder: macos-latest
+            platform: linux/arm64
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.builder }}
+
     permissions:
       contents: read
       packages: write
@@ -77,6 +85,7 @@ jobs:
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
+          platforms: ${{ matrix.platform }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha

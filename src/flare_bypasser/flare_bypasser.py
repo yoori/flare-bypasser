@@ -391,7 +391,7 @@ class Solver(object):
       step = 'set cookies'
 
       # set cookies if required
-      if preprocessed_req.cookies is not None and len(preprocessed_req.cookies) > 0:
+      if preprocessed_req.cookies :
         logging.debug('Setting cookies...')
         await self._driver.set_cookies(preprocessed_req.cookies)
         await self._driver.get(preprocessed_req.url)

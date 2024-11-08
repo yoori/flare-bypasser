@@ -86,7 +86,7 @@ async def process_solve_request(
     solve_request.cookies = [
       (cookie if isinstance(cookie, dict) else cookie.__dict__)
       for cookie in cookies
-    ]
+    ] if cookies else []
     solve_request.max_timeout = max_timeout * 1.0 / 1000
     solve_request.proxy = proxy
     solve_request.params = params

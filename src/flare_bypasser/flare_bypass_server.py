@@ -41,10 +41,22 @@ solver_args = {
 }
 
 
+class CookieModel(pydantic.BaseModel):
+  name: str = pydantic.Field(description='Cookie name')
+  value: str = pydantic.Field(description='Cookie value (empty string if no value)')
+  domain: str = pydantic.Field(description='Cookie domain')  # < Is required - we don't allow super cookies usage.
+  port: typing.Optional[int] = pydantic.Field(default=None, description='Cookie port')
+  path: typing.Optional[str] = pydantic.Field(default='/', description='Cookie path')
+  secure: typing.Optional[bool] = pydantic.Field(default=True, description='Cookie is secure')
+  expires: typing.Optional[int] = pydantic.Field(
+    default=None, description='Cookie expire time in seconds after epoch start'
+  )
+
+
 class HandleCommandResponseSolution(pydantic.BaseModel):
   status: str
   url: str
-  cookies: list
+  cookies: list[CookieModel] = pydantic.Field(default=[], description='Cookies got after solving')
   userAgent: typing.Optional[str] = None
   response: typing.Optional[typing.Any] = None
 
@@ -60,7 +72,7 @@ class HandleCommandResponse(pydantic.BaseModel):
 async def process_solve_request(
   url: str,
   cmd: str,
-  cookies: list = None,
+  cookies: list[CookieModel] = None,
   max_timeout: int = None,  # in msec.
   proxy: str = None,
   params: dict = {}
@@ -70,8 +82,11 @@ async def process_solve_request(
   try:
     solve_request = flare_bypasser.Request()
     solve_request.cmd = cmd
-    solve_request.cookies = cookies
     solve_request.url = url
+    solve_request.cookies = [
+      (cookie if isinstance(cookie, dict) else cookie.__dict__)
+      for cookie in cookies
+    ]
     solve_request.max_timeout = max_timeout * 1.0 / 1000
     solve_request.proxy = proxy
     solve_request.params = params
@@ -82,6 +97,10 @@ async def process_solve_request(
       **solver_args)
     solve_response = await solver.solve(solve_request)
 
+    for c in solve_response.cookies:
+      logging.info("COOKIE: " + str(c) + ", type(c) = " + str(type(c)))
+      logging.info("COOKIE IS : " + str(isinstance(c, dict)))
+
     return HandleCommandResponse(
       status="ok",
       message=solve_response.message,
@@ -90,7 +109,10 @@ async def process_solve_request(
       solution=HandleCommandResponseSolution(
         status="ok",
         url=solve_response.url,
-        cookies=solve_response.cookies,
+        cookies=[  # Convert cookiejar.Cookie to CookieModel
+          CookieModel(**cookie) for cookie in solve_response.cookies
+        ],
+        # < pass cookies as dict's (solver don't know about rest model).
         userAgent=solve_response.user_agent,
         message=solve_response.message,
         response=solve_response.response
@@ -124,7 +146,7 @@ async def Process_request_in_flaresolverr_format(
     str,
     fastapi.Body(description="Command for execute")] = None,
   cookies: typing_extensions.Annotated[
-    typing.List[typing.Dict],
+    typing.List[CookieModel],
     fastapi.Body(description="Cookies to send.")
   ] = None,
   maxTimeout: typing_extensions.Annotated[
@@ -161,7 +183,7 @@ async def Get_cookies_after_solve(
     fastapi.Body(description="Url for solve challenge.")
   ],
   cookies: typing_extensions.Annotated[
-    typing.List[typing.Dict],
+    typing.List[CookieModel],
     fastapi.Body(description="Cookies to send.")
   ] = None,
   maxTimeout: typing_extensions.Annotated[
@@ -193,7 +215,7 @@ async def Get_cookies_and_page_content_after_solve(
     fastapi.Body(description="Url for solve challenge.")
   ],
   cookies: typing_extensions.Annotated[
-    typing.List[typing.Dict],
+    typing.List[CookieModel],
     fastapi.Body(description="Cookies to send.")
   ] = None,
   maxTimeout: typing_extensions.Annotated[
@@ -229,7 +251,7 @@ async def Get_cookies_and_POST_request_result(
     fastapi.Body(description="""Post data that will be passed in request""")
   ],
   cookies: typing_extensions.Annotated[
-    typing.List[typing.Dict],
+    typing.List[CookieModel],
     fastapi.Body(description="Cookies to send.")
   ] = None,
   maxTimeout: typing_extensions.Annotated[
@@ -271,7 +293,7 @@ async def Process_user_custom_command(
     fastapi.Body(description="Url for solve challenge.")
   ],
   cookies: typing_extensions.Annotated[
-    typing.List[typing.Dict],
+    typing.List[CookieModel],
     fastapi.Body(description="Cookies to send.")
   ] = None,
   maxTimeout: typing_extensions.Annotated[

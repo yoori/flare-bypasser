@@ -161,8 +161,9 @@ class BrowserWrapper(object):
     # convert {"name": "...", "value": "...", ...} to array of http.cookiejar.Cookie
     cookie_jar = http.cookiejar.CookieJar()
     for c in cookies:
+      # TO CHECK, that all fields filled correctly.
       cookie_jar.set_cookie(http.cookiejar.Cookie(
-        None,
+        None,  # version
         c.get('name', None),
         c.get('value', None),
         c.get('port', 443),
@@ -173,11 +174,13 @@ class BrowserWrapper(object):
         c.get('path', '/'),
         None,  # path_specified
         c.get('secure', False),
+        c.get('expires', None),  # < here expected float seconds since epoch time.
         None,  # discard
         None,  # comment
-        None  # comment_url
+        None,  # comment_url
+        None   # rest
       ))
-    await self._nodriver_driver.cookies().set_all(cookie_jar)
+    await self._nodriver_driver.cookies.set_all(cookie_jar)
 
   async def get_cookies(self) -> list[dict]:
     # return list of dict have format: {"name": "...", "value": "..."}

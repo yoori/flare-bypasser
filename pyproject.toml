@@ -1,0 +1,48 @@
+[build-system]
+requires = [
+  'setuptools>=45.0',
+  'setuptools-scm'
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flare_bypasser"
+version = "0.1.28"
+authors = [
+  {name = "yoori", email = "yuri.kuznecov@gmail.com"}
+]
+
+description = ""
+readme = "README.md"
+license = {text = 'GNU Lesser General Public License'}
+requires-python = ">=3.9"
+
+dependencies = [
+  'asyncio',
+  'uuid',
+  'opencv-python',
+  'certifi==2024.8.30',
+  'requests',  # nodriver require it
+  'websockets==13.1', # 14.0 (released at 9 Nov) dropped ClientConnection.closed attribute and break nodriver.
+  'nodriver @ git+https://github.com/yoori/nodriver.git',
+  # < fork with cookie fix, switch to https://github.com/ultrafunkamsterdam/nodriver.git after MR
+  'argparse',
+  'oslex',
+  'jinja2',
+
+  # Server dependecies
+  'fastapi',
+  'uvicorn',
+
+  'xvfbwrapper==0.2.9 ; platform_system != "Windows"',
+  'gunicorn ; platform_system != "Windows"',
+]
+
+[project.urls]
+homepage = "https://github.com/yoori/flare-bypasser"
+
+[options]
+package_dir = "src/flare_bypasser"
+
+[project.scripts]
+flare_bypass_server = "flare_bypasser:server_run"

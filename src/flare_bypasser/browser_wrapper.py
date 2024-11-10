@@ -4,6 +4,8 @@ import typing
 import asyncio
 import uuid
 import http.cookiejar
+import shutil
+
 import cv2
 
 import nodriver
@@ -51,8 +53,13 @@ class BrowserWrapper(object):
     async def flash(self, duration: typing.Union[float, int] = 0.5):
       pass
 
-  def __init__(self, nodriver_driver: nodriver.Browser):
+  def __init__(self, nodriver_driver: nodriver.Browser, user_data_dir: str = None):
     self._nodriver_driver = nodriver_driver
+    self._user_data_dir = user_data_dir
+
+  def __del__(self):
+    if self._user_data_dir:
+      shutil.rmtree(self._user_data_dir, ignore_errors=True)
 
   @staticmethod
   def start_xvfb_display():
@@ -65,6 +72,7 @@ class BrowserWrapper(object):
 
   @staticmethod
   async def create(proxy = None, disable_gpu = False):
+    user_data_dir = os.path.join("/tmp", str(uuid.uuid4()))  # < Each created chrome should be isolated.
     BrowserWrapper.start_xvfb_display()
     browser_args = []
     if proxy:
@@ -77,11 +85,15 @@ class BrowserWrapper(object):
     if sys.platform == 'win32':
       browser_args += ["--headless"]
 
-    nodriver_driver = await nodriver.start(
-      sandbox=False,
-      browser_args=browser_args
-    )
-    return BrowserWrapper(nodriver_driver)
+    browser_args += ["--user-data-dir=" + user_data_dir]
+    try:
+      nodriver_driver = await nodriver.start(
+        sandbox=False,
+        browser_args=browser_args
+      )
+      return BrowserWrapper(nodriver_driver, user_data_dir = user_data_dir)
+    finally:
+      shutil.rmtree(user_data_dir, ignore_errors=True)
 
   # Get original driver page impl - can be used only in user command specific implementations
   def get_driver(self):
@@ -94,6 +106,9 @@ class BrowserWrapper(object):
     self._page = None
     if self._nodriver_driver:
       self._nodriver_driver.stop()
+    if self._user_data_dir:
+      shutil.rmtree(self._user_data_dir, ignore_errors=True)
+      self._user_data_dir = None
 
   async def title(self):
     res = await self._page.select("title")

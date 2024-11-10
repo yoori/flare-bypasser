@@ -7,7 +7,7 @@ name = 'flare-bypasser'
 setup(
   name='flare-bypasser',
   python_requires='>= 3.9',
-  version='0.1.25',
+  version='0.1.27',
   packages=["flare_bypasser"],
   package_dir={
     "": ".",
@@ -24,6 +24,7 @@ setup(
     'opencv-python',
     'certifi==2023.7.22',
     'requests',  # nodriver require it
+    'websockets==13.1', # 14.0 (released at 9 Nov) dropped ClientConnection.closed attribute and break nodriver.
     'nodriver @ git+https://github.com/yoori/nodriver.git',
     # < fork with cookie fix, switch to https://github.com/ultrafunkamsterdam/nodriver.git after MR
     'argparse',

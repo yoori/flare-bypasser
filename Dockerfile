@@ -24,7 +24,7 @@ RUN mkdir -p "${PACKAGES_DIR}" \
 # Install gost proxy (for process requests with proxy, that require authorization)
 RUN apt-get install -y --no-install-recommends curl  # gost-install.sh requirement
 COPY utils/gost-install.sh ./gost-install.sh
-RUN ./gost-install.sh --install
+RUN chmod +x ./gost-install.sh && bash -c "./gost-install.sh --install"
 
 COPY utils/linux_chrome_installer.py /opt/flare_bypasser/bin/linux_chrome_installer.py
 RUN python3 /opt/flare_bypasser/bin/linux_chrome_installer.py \

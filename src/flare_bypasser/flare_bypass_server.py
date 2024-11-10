@@ -365,8 +365,8 @@ def server_run():
     )
 
     logging.getLogger('urllib3').setLevel(logging.ERROR)
-    logging.getLogger('selenium.webdriver.remote.remote_connection').setLevel(logging.WARNING)
-    logging.getLogger('undetected_chromedriver').setLevel(logging.WARNING)
+    #logging.getLogger('nodriver.core.browser').setLevel(logging.DEBUG)
+    #logging.getLogger('uc.connection').setLevel(logging.DEBUG)
 
     parser = argparse.ArgumentParser(
       description='Start flare_bypass server.',

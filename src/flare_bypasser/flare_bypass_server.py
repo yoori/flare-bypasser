@@ -25,12 +25,36 @@ if USE_GUNICORN:
 else:
   import uvicorn.main
 
+# Remove requirement for Content-Type header presence.
+class RemoveContentTypeRequirementMiddleware(object):
+  def __init__(self, app):
+    self._app = app
+
+  async def __call__(self, scope, receive, send):
+    headers = scope["headers"]
+    content_type_found = False
+    for header_index, header in enumerate(headers) :
+      if not isinstance(header, tuple) or len(header) != 2:
+        # Unexpected headers format - don't make something.
+        content_type_found = True
+        break
+      if header[0].decode('utf-8').lower() == 'content-type':
+        headers[header_index] = (b'content-type', b'application/json')
+        content_type_found = True
+        break
+    if not content_type_found:
+      headers.append((b'content-type', b'application/json'))
+
+    return await self._app(scope, receive, send)
+
 server = fastapi.FastAPI(
   openapi_url='/docs/openapi.json',
   docs_url='/docs',
   swagger_ui_parameters={"defaultModelsExpandDepth": -1},
   tags_metadata=[]
 )
+
+server.add_middleware(RemoveContentTypeRequirementMiddleware)
 
 PROXY_ANNOTATION = """Proxy in format: <protocol>://(<user>:<password>@)?<host>:<port> .
 Examples: socks5://1.1.1.1:2000, http://user:password@1.1.1.1:8080.

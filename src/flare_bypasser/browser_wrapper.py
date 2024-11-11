@@ -151,7 +151,7 @@ class BrowserWrapper(object):
     try:
       while True:
         try:
-          tmp_file_path = os.path.join("/tmp", str(uuid.uuid4()) + ".png")
+          tmp_file_path = os.path.join("/tmp", str(uuid.uuid4()) + ".jpg")
           await self._page.save_screenshot(tmp_file_path)
           return cv2.imread(tmp_file_path)
         except nodriver.core.connection.ProtocolException as e:

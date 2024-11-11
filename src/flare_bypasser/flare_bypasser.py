@@ -13,6 +13,7 @@ import html
 import urllib
 
 # Image processing imports
+import numpy as np
 import cv2
 
 from .browser_wrapper import BrowserWrapper
@@ -204,21 +205,21 @@ class Solver(object):
         self._debug_dir, str(self._screenshot_i) + '_' + step_name)
 
       if image is not None:
-        cv2.imwrite(screenshot_file_without_ext + ".png", image)
+        cv2.imwrite(screenshot_file_without_ext + ".jpg", image)
       else:
-        await self._driver.save_screenshot(screenshot_file_without_ext + ".png")
+        await self._driver.save_screenshot(screenshot_file_without_ext + ".jpg")
 
       if mark_coords:
-        image = cv2.imread(screenshot_file_without_ext + ".png")
+        image = cv2.imread(screenshot_file_without_ext + ".jpg")
         image = cv2.circle(image, mark_coords, 5, (255, 0, 0), 2)
-        cv2.imwrite(screenshot_file_without_ext + "_mark.png", image)
+        cv2.imwrite(screenshot_file_without_ext + "_mark.jpg", image)
 
       dom = await self._driver.get_dom()
       with open(screenshot_file_without_ext + '.html', 'w') as fp:
         fp.write(dom)
       self._screenshot_i += 1
 
-      logging.info("Screenshot saved to '" + screenshot_file_without_ext + "'")
+      logging.debug("Screenshot saved to '" + screenshot_file_without_ext + "'")
 
   async def solve(self, req: Request) -> Response:
     # do some validations
@@ -332,11 +333,12 @@ class Solver(object):
         logging.info("Challenge disappeared on step #" + str(attempt))
         break
 
+      logging.info("To check checkbox presense")
       # check that need to click,
       # get screenshot of full page (all elements is in shadowroot)
       # clicking can be required few times.
       page_image = await self._driver.get_screenshot()
-      click_coord = Solver._get_flare_click_point(page_image)
+      click_coord = Solver.get_flare_click_point(page_image)
       if click_coord:
         logging.info("Verify checkbot found, click coordinates: " + str(click_coord))
         await self.save_screenshot('to_verify_click', image=page_image, mark_coords=click_coord)
@@ -352,6 +354,8 @@ class Solver(object):
         await asyncio.sleep(1)
 
         await self.save_screenshot('after_verify_click')
+      else :
+        logging.info("Checkbox isn't found")
 
       attempt = attempt + 1
       await asyncio.sleep(_SHORT_TIMEOUT)
@@ -440,11 +444,27 @@ class Solver(object):
       raise Solver.Exception(str(e), step=step)
 
   @staticmethod
-  def _get_flare_rect_contours_(image):
+  def _get_flare_rect_contours(image, save_steps_dir: str = None):
     image_height, image_width, _ = image.shape
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     ret, mask = cv2.threshold(gray_image, 240, 255, 0)
-    # < we can use 230 + closing by filter for more accuracy, but it require much CPU.
+
+    if save_steps_dir:
+      cv2.imwrite(os.path.join(save_steps_dir, 'base_mask.jpg'), mask)
+
+    # Erode little omissions in contours (lost by color range or by image quality).
+    erode_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    mask = cv2.erode(mask, erode_kernel, iterations = 1)
+
+    if save_steps_dir:
+      cv2.imwrite(os.path.join(save_steps_dir, 'eroded_mask.jpg'), mask)
+
+    # Dilate for increase contours detection precision.
+    dilate_kernel = np.array([[1, 1], [1, 0]], dtype=np.uint8)
+    mask = cv2.dilate(mask, dilate_kernel, iterations = 1)
+
+    if save_steps_dir:
+      cv2.imwrite(os.path.join(save_steps_dir, 'mask_for_contours_detect.jpg'), mask)
 
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -472,19 +492,11 @@ class Solver(object):
       if iou > 0.8:
         rect_contours.append((w * h, c))
 
-    # Here 2 rect contours, each can be present as one or 2 contours
-    """
-    debug_image=image.copy()
-    for rc in rect_contours:
-      debug_image=cv2.drawContours(debug_image, [rc[1]], -1, (255, 0, 0), 1)
-    cv2.imwrite('debug_rect_contours.png', debug_image)
-    """
-
     return rect_contours
 
   @staticmethod
-  def _get_flare_click_point(image):
-    rect_contours = Solver._get_flare_rect_contours_(image)
+  def get_flare_click_point(image, logger = None, save_steps_dir: str = None):
+    rect_contours = Solver._get_flare_rect_contours(image, save_steps_dir=save_steps_dir)
 
     rect_contours = sorted(rect_contours, key=lambda c_pair: c_pair[0])
 
@@ -501,21 +513,28 @@ class Solver(object):
     rect_contours = res_rect_contours
     # rect contours sorted by area ascending
 
-    """
-    debug_image=image.copy()
-    for rc in rect_contours:
-      print("C: " + str(rc[0]))
-      debug_image=cv2.drawContours(debug_image, [rc[1]], -1, (255, 0, 0), 1)
-    cv2.imwrite('debug_packed_rect_contours.png', debug_image)
-    """
+    if save_steps_dir:
+      debug_image = image.copy()
+      for rc in rect_contours:
+        debug_image = cv2.drawContours(debug_image, [rc[1]], -1, (255, 0, 0), 1)
+      cv2.imwrite(os.path.join(save_steps_dir, 'image_with_rect_contours.png'), debug_image)
+
+    if logger:
+      logger.debug("Found " + str(len(rect_contours)) + " contours")
 
     # Now we should find two rect contours (one inside other) with ratio 1-5%, (now I see: 0.0213).
     if len(rect_contours) > 1:
       for area1_index in range(len(rect_contours)):
         area1 = rect_contours[area1_index][0]
-        for check_c in rect_contours[area1_index + 1:]:
+        for area2_sub_index, check_c in enumerate(rect_contours[area1_index + 1:]):
+          area2_index = area2_sub_index + area1_index + 1
           area2 = check_c[0]
           area_ratio = area1 / area2
+          if logger:
+            logger.debug(
+              "Areas ratio #" + str(area1_index) + "/#" + str(area2_index) + ": " +
+              str(area_ratio)
+            )
           # Check area ratio and that area1 inside area2.
           if area_ratio > 0.01 and area_ratio < 0.05:
             # Checkbox found.

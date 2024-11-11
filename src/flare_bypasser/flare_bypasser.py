@@ -166,7 +166,7 @@ class Solver(object):
   _proxy_controller: ProxyController = None
   _disable_gpu: bool = False
   _screenshot_i: int = 0
-  _debug: bool = True
+  _debug_dir: bool = True
 
   class Exception(Exception):
     step = None
@@ -178,11 +178,13 @@ class Solver(object):
   def __init__(
     self, proxy: str = None, command_processors: typing.Dict[str, BaseCommandProcessor] = {},
     proxy_controller=None,
-    disable_gpu=False
+    disable_gpu=False,
+    debug_dir=None
   ):
     self._proxy = proxy
     self._driver = None
     self._proxy_controller = proxy_controller
+    self._debug_dir = debug_dir
     self._command_processors = dict(command_processors) if command_processors else {}
     # init standard commands
     get_cookies_command_processor = GetCookiesCommandProcessor()
@@ -197,8 +199,9 @@ class Solver(object):
     self._disable_gpu = disable_gpu
 
   async def save_screenshot(self, step_name, image=None, mark_coords=None):
-    if self._debug:
-      screenshot_file_without_ext = str(self._screenshot_i) + '_' + step_name
+    if self._debug_dir:
+      screenshot_file_without_ext = os.path.join(
+        self._debug_dir, str(self._screenshot_i) + '_' + step_name)
 
       if image is not None:
         cv2.imwrite(screenshot_file_without_ext + ".png", image)

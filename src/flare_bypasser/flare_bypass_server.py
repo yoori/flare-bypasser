@@ -4,6 +4,9 @@ import re
 import typing
 import typing_extensions
 import datetime
+import copy
+import uuid
+import pathlib
 import traceback
 import importlib
 import logging
@@ -37,9 +40,9 @@ read instructions - need to install gost."""
 solver_args = {
   'command_processors': {},
   'proxy_controller': None,
-  'disable_gpu': False
+  'disable_gpu': False,
+  'debug_dir': None
 }
-
 
 class CookieModel(pydantic.BaseModel):
   name: str = pydantic.Field(description='Cookie name')
@@ -92,14 +95,15 @@ async def process_solve_request(
     solve_request.params = params
 
     global solver_args
+    local_solver_args = copy.copy(solver_args)
+    if local_solver_args['debug_dir']:
+      debug_dir = os.path.join(local_solver_args['debug_dir'], str(uuid.uuid4()))
+      pathlib.Path(debug_dir).mkdir(parents=True, exist_ok=True)
+      local_solver_args['debug_dir'] = debug_dir
     solver = flare_bypasser.Solver(
       proxy=proxy,
-      **solver_args)
+      **local_solver_args)
     solve_response = await solver.solve(solve_request)
-
-    for c in solve_response.cookies:
-      logging.info("COOKIE: " + str(c) + ", type(c) = " + str(type(c)))
-      logging.info("COOKIE IS : " + str(isinstance(c, dict)))
 
     return HandleCommandResponse(
       status="ok",
@@ -365,6 +369,7 @@ def server_run():
     )
 
     logging.getLogger('urllib3').setLevel(logging.ERROR)
+    logging.getLogger('flare_bypasser.flare_bypasser').setLevel(logging.INFO)
     #logging.getLogger('nodriver.core.browser').setLevel(logging.DEBUG)
     #logging.getLogger('uc.connection').setLevel(logging.DEBUG)
 
@@ -374,13 +379,25 @@ def server_run():
     parser.add_argument("-b", "--bind", type=str, default='127.0.0.1:8000')
     # < parse for pass to gunicorn as is and as "--host X --port X" to uvicorn
     parser.add_argument("--extensions", nargs='*', type=str)
-    parser.add_argument("--proxy-listen-start-port", type=int, default=10000)
-    parser.add_argument("--proxy-listen-end-port", type=int, default=20000)
+    parser.add_argument("--proxy-listen-start-port", type=int, default=10000,
+      help="""Port interval start, that can be used for up local proxies on request processing"""
+    )
+    parser.add_argument(
+      "--proxy-listen-end-port", type=int, default=20000,
+      help="""Port interval end for up local proxies"""
+    )
     parser.add_argument(
       "--proxy-command", type=str,
-      default="gost -L=socks5://127.0.0.1:{{LOCAL_PORT}} -F='{{UPSTREAM_URL}}'"
+      default="gost -L=socks5://127.0.0.1:{{LOCAL_PORT}} -F='{{UPSTREAM_URL}}'",
+      help="""command template (jinja2), that will be used for up proxy for process request
+      with arguments: LOCAL_PORT, UPSTREAM_URL - proxy passed in request"""
     )
     parser.add_argument("--disable-gpu", action='store_true')
+    parser.add_argument(
+      "--debug-dir", type=str, default=None,
+      help="""directory for save intermediate DOM dumps and screenshots on solving,
+      for each request will be created unique directory"""
+    )
     parser.set_defaults(disable_gpu=False)
     args, unknown_args = parser.parse_known_args()
     try:
@@ -403,6 +420,10 @@ def server_run():
         # Expect that extension element has format: <module>.<method>
         solver_args['command_processors'].update(
           parse_entrypoint_command_processors(extension))
+
+    if args.debug_dir:
+      logging.getLogger('flare_bypasser.flare_bypasser').setLevel(logging.DEBUG)
+    solver_args['debug_dir'] = args.debug_dir
 
     sys.argv = [re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])]
     sys.argv += unknown_args

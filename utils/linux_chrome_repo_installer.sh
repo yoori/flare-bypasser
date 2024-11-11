@@ -13,13 +13,16 @@ echo 'deb [arch=amd64] https://dl.google.com/linux/chrome/deb/ stable main' >>/e
 apt update -y --no-install-recommends >/dev/null 2>&1
 mkdir -p "$INSTALL_ROOT"
 
-FOUND_VERSION=$(apt list --all-versions 2>/dev/null | grep -E '^(google-chrome-.*|chromium/)' |
-  tr '\t' ' ' |
-  awk '{ if ($2 ~ /^'"$(echo "130." | sed 's/[.]/\\\./')"'/) {print $1" "$2} }' |
+apt list --all-versions 2>/dev/null | grep -E '^(google-chrome-.*|chromium/)' | \
+  tr '\t' ' ' >/tmp/available_chrome_versions
+
+FOUND_VERSION=$(cat /tmp/available_chrome_versions |
+  awk '{ if ($2 ~ /^'"$(echo "$CHROME_VERSION" | sed 's/[.]/\\\./')"'/) {print $1" "$2} }' |
   sed -r 's|(^[^ ]+)/[^ ]+ (.*)$|\1 \2|' | head -n1 | tr ' ' '=')
 
 if [ "$FOUND_VERSION" = "" ] ; then
-  echo "Can't find chrome of required version: $CHROME_VERSION" >&2
+  echo "Can't find chrome of required version: $CHROME_VERSION , available versions:" >&2
+  cat /tmp/available_chrome_versions >&2
   exit 1
 fi
 
@@ -27,9 +30,11 @@ echo "To install package: $FOUND_VERSION"
 
 apt remove -y "$(echo "$FOUND_VERSION" | awk -F= '{print $1}')" >/dev/null 2>&1
 
-apt install -y --no-install-recommends "$FOUND_VERSION" >/dev/null 2>/tmp/chrome_install.err || (
-  echo "Chrome install failed:" >&2 ; cat /tmp/chrome_install.err >&2 ; exit 1 ;
-)
+apt install -y --no-install-recommends "$FOUND_VERSION" >/tmp/chrome_install.err 2>&1 || (
+  echo "Chrome install failed:" >&2 ; cat /tmp/chrome_install.err >&2 ;
+  echo "Available versions: " >&2 ; cat /tmp/available_chrome_versions >&2 ;
+  exit 1 ;
+) || exit 1
 
 FULL_INSTALL_ROOT=$(pushd "$INSTALL_ROOT" >/dev/null ; pwd ; popd >/dev/null 2>&1)
 

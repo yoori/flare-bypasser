@@ -2,7 +2,7 @@ ARG PYTHON_VERSION=3.11
 
 FROM python:${PYTHON_VERSION}-slim-bullseye AS builder
 
-ARG CHROME_VERSION=131
+ARG CHROME_VERSION=131.
 
 WORKDIR /app/
 
@@ -26,12 +26,24 @@ RUN apt-get install -y --no-install-recommends curl  # gost-install.sh requireme
 COPY utils/gost-install.sh ./gost-install.sh
 RUN chmod +x ./gost-install.sh && bash -c "./gost-install.sh --install"
 
-COPY utils/linux_chrome_installer.py /opt/flare_bypasser/bin/linux_chrome_installer.py
-RUN python3 /opt/flare_bypasser/bin/linux_chrome_installer.py \
-  --version-prefix="$CHROME_VERSION" \
-  --install-root=/opt/flare_bypasser/installed_chrome/ \
-  --arch=$(arch) || \
-  { echo "Can't install chrome (required version '$CHROME_VERSION')" >&2 ; exit 1 ; }
+COPY utils/linux_chrome_archive_installer.py ./linux_chrome_archive_installer.py
+COPY utils/linux_chrome_repo_installer.sh ./linux_chrome_repo_installer.sh
+
+# We prefer version from archive, because it is more productive (faster start),
+# but for ARM's here no available versions in archive
+RUN if [ "$(arch)" != "x86_64x" ] ; then \
+    echo "To install chrome from google repository (no archive versions for ARM)" ; \
+    chmod +x ./linux_chrome_repo_installer.sh ; \
+    bash -c "./linux_chrome_repo_installer.sh /opt/flare_bypasser/installed_chrome/ '$CHROME_VERSION'" || \
+    { echo "Can't install chrome (required version '$CHROME_VERSION')" >&2 ; exit 1 ; } ; \
+  else \
+    echo "To install chrome from archive" ; \
+    python3 /opt/flare_bypasser/bin/linux_chrome_archive_installer.py \
+      --version-prefix="$CHROME_VERSION" \
+      --install-root=/opt/flare_bypasser/installed_chrome/ \
+      --arch=$(arch) || \
+    { echo "Can't install chrome (required version '$CHROME_VERSION')" >&2 ; exit 1 ; } ; \
+  fi
 
 
 FROM python:${PYTHON_VERSION}-slim-bullseye

@@ -33,14 +33,12 @@ def unzip_package(
 
 
 def download_and_install(version_prefix = None, install_root = None, arch = 'x86_64'):
+  # Script can install chrome only on linux platforms and only on x86_64.
+  # here no archive of versions for linux/arm64
   if arch == 'x86_64':
     target_platform = "linux64"
-  elif arch == 'aarch64' :  # < Raspberry, ARM based MacOS
-    target_platform = 'mac-arm64'
-  elif arch == 'i386':  # < Intel based MacOS
-    target_platform = 'mac-x64'
   else :
-    raise Exception("Unknown platform: " + str(arch))
+    raise Exception("Unknown or unsupported platform: " + str(arch))
 
   chrome_download_url = None
   with urlopen(

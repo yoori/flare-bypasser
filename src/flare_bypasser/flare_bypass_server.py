@@ -11,6 +11,7 @@ import traceback
 import importlib
 import logging
 import argparse
+import urllib3.util
 import fastapi
 import pydantic
 
@@ -58,6 +59,8 @@ server.add_middleware(RemoveContentTypeRequirementMiddleware)
 
 PROXY_ANNOTATION = """Proxy in format: <protocol>://(<user>:<password>@)?<host>:<port> .
 Examples: socks5://1.1.1.1:2000, http://user:password@1.1.1.1:8080.
+For flaresolverr compatibility allowed format:
+{"url": "<protocol>://<host>:<port>", "username": "<username>", "port": "<port>"}
 If you use proxy with authorization and use flare-bypasser as package, please,
 read instructions - need to install gost."""
 
@@ -67,6 +70,13 @@ solver_args = {
   'disable_gpu': False,
   'debug_dir': None
 }
+
+
+class ProxyModel(pydantic.BaseModel):
+  url: str = pydantic.Field(description='Proxy url')
+  username: str = pydantic.Field(default=None, description='Proxy authorization username')
+  password: str = pydantic.Field(default=None, description='Proxy authorization password')
+
 
 class CookieModel(pydantic.BaseModel):
   name: str = pydantic.Field(description='Cookie name')
@@ -101,10 +111,25 @@ async def process_solve_request(
   cmd: str,
   cookies: list[CookieModel] = None,
   max_timeout: int = None,  # in msec.
-  proxy: str = None,
+  proxy: typing.Union[str, ProxyModel] = None,
   params: dict = {}
 ):
   start_timestamp = datetime.datetime.timestamp(datetime.datetime.now())
+
+  # Adapt proxy format for canonical representation.
+  if proxy is not None and not isinstance(proxy, str):
+    if not proxy.url:
+      raise Exception("No url attribute in proxy passed as object")
+    parsed_proxy = urllib3.util.parse_url(proxy.url)
+    proxy = (
+      parsed_proxy.scheme + "://" +
+      (
+        proxy.username + ":" + (proxy.password if proxy.password else '') + '@'
+        if proxy.username else ''
+      ) +
+      parsed_proxy.hostname +
+      (":" + str(parsed_proxy.port) if parsed_proxy.port else '')
+    )
 
   try:
     solve_request = flare_bypasser.Request()
@@ -182,7 +207,7 @@ async def Process_request_in_flaresolverr_format(
     fastapi.Body(description="Max processing timeout in ms.")
   ] = 60000,
   proxy: typing_extensions.Annotated[
-    str,
+    typing.Union[str, ProxyModel],
     fastapi.Body(description=PROXY_ANNOTATION)
   ] = None,
   params: typing_extensions.Annotated[
@@ -219,7 +244,7 @@ async def Get_cookies_after_solve(
     fastapi.Body(description="Max processing timeout in ms.")
   ] = 60000,
   proxy: typing_extensions.Annotated[
-    str,
+    typing.Union[str, ProxyModel],
     fastapi.Body(description=PROXY_ANNOTATION)
   ] = None,
 ):
@@ -251,7 +276,7 @@ async def Get_cookies_and_page_content_after_solve(
     fastapi.Body(description="Max processing timeout in ms.")
   ] = 60000,
   proxy: typing_extensions.Annotated[
-    str,
+    typing.Union[str, ProxyModel],
     fastapi.Body(description=PROXY_ANNOTATION)
   ] = None,
 ):
@@ -287,7 +312,7 @@ async def Get_cookies_and_POST_request_result(
     fastapi.Body(description="Max processing timeout in ms.")
   ] = 60000,
   proxy: typing_extensions.Annotated[
-    str,
+    typing.Union[str, ProxyModel],
     fastapi.Body(description=PROXY_ANNOTATION)
   ] = None,
   # postDataContentType: typing_extensions.Annotated[
@@ -329,7 +354,7 @@ async def Process_user_custom_command(
     fastapi.Body(description="Max processing timeout in ms.")
   ] = 60000,
   proxy: typing_extensions.Annotated[
-    str,
+    typing.Union[str, ProxyModel],
     fastapi.Body(description=PROXY_ANNOTATION)
   ] = None,
   params: typing_extensions.Annotated[

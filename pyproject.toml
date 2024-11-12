@@ -20,6 +20,7 @@ requires-python = ">=3.9"
 dependencies = [
   'asyncio',
   'uuid',
+  'urllib3',
   'opencv-python',
   'certifi==2024.8.30',
   'requests',  # nodriver require it

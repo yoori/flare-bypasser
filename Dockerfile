@@ -46,9 +46,10 @@ RUN . /tmp/build.env ; if [ "$(arch)" != "x86_64" ] ; then \
     { echo "Can't install chrome (required version '$CHROME_VERSION')" >&2 ; exit 1 ; } ; \
   else \
     echo "To install chrome($CHROME_VERSION) from archive" ; \
+    mkdir -p /opt/flare_bypasser/installed_chrome/usr/bin/ ; \
     python3 ./linux_chrome_archive_installer.py \
       --version-prefix="$CHROME_VERSION" \
-      --install-root=/opt/flare_bypasser/installed_chrome/ \
+      --install-root=/opt/flare_bypasser/installed_chrome/usr/bin/ \
       --arch=$(arch) || \
     { echo "Can't install chrome (required version '$CHROME_VERSION')" >&2 ; exit 1 ; } ; \
   fi

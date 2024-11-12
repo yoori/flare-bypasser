@@ -14,15 +14,20 @@ apt update -y --no-install-recommends >/dev/null 2>&1
 mkdir -p "$INSTALL_ROOT"
 
 apt list --all-versions 2>/dev/null | grep -E '^(google-chrome-.*|chromium/)' | \
-  tr '\t' ' ' >/tmp/available_chrome_versions
+  tr '\t' ' ' >/tmp/available_all_chrome_versions
 
-FOUND_VERSION=$(cat /tmp/available_chrome_versions |
+cat /tmp/available_all_chrome_versions | awk -F' ' '{if($3 = "'"$(arch)"'"){print $0}}' \
+  >/tmp/available_platform_chrome_versions
+
+FOUND_VERSION=$(cat /tmp/available_platform_chrome_versions |
   awk '{ if ($2 ~ /^'"$(echo "$CHROME_VERSION" | sed 's/[.]/\\\./')"'/) {print $1" "$2} }' |
   sed -r 's|(^[^ ]+)/[^ ]+ (.*)$|\1 \2|' | head -n1 | tr ' ' '=')
 
 if [ "$FOUND_VERSION" = "" ] ; then
-  echo "Can't find chrome of required version: $CHROME_VERSION , available versions:" >&2
-  cat /tmp/available_chrome_versions >&2
+  echo "Can't find chrome of required version: $CHROME_VERSION , all available versions (for all platforms):" >&2
+  cat /tmp/available_all_chrome_versions >&2
+  echo "Version available for your platform ($(arch)):" >&2
+  cat /tmp/available_platform_chrome_versions >&2
   exit 1
 fi
 

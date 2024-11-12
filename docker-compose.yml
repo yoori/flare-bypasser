@@ -2,7 +2,7 @@ services:
   flare-bypasser :
     build:
       args:
-        CHROME_VERSION: '130.'
+        #CHROME_VERSION: '131.'
         UID: 1001
         # CHROME_DISABLE_GPU: true
         # CHECK_SYSTEM: true

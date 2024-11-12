@@ -72,7 +72,7 @@ COPY --from=builder ${PACKAGES_DIR} ${PACKAGES_DIR}
 COPY --from=builder /usr/local/bin/gost /usr/local/bin/gost
 
 # Copy installed chrome
-COPY --from=builder /opt/flare_bypasser/installed_chrome /usr/bin/
+COPY --from=builder /opt/flare_bypasser/installed_chrome /
 
 # Install dependencies and create user
 # You can test Chromium running this command inside the container:

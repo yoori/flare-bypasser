@@ -121,14 +121,10 @@ class BrowserWrapper(object):
       return 0
 
   async def get(self, url):
-    # we work only with one page - close all tabs
-    try:
-      for tab_i, tab in enumerate(self._nodriver_driver):
-        if tab_i > 0:
-          await tab.close()
-    except IndexError:
-      # nodriver can raise it if here no opened pages (on main_tab getting).
-      pass
+    # we work only with one page - close all tabs (excluding first - this close browser)
+    for tab_i, tab in enumerate(self._nodriver_driver.tabs):
+      if tab_i > 0:
+        await tab.close()
     self._page = await self._nodriver_driver.get(url)
 
   async def click_coords(self, coords):

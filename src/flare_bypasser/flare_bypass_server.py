@@ -73,7 +73,7 @@ solver_args = {
 
 
 class ProxyModel(pydantic.BaseModel):
-  url: str = pydantic.Field(description='Proxy url')
+  url: str = pydantic.Field(default=None, description='Proxy url')
   username: str = pydantic.Field(default=None, description='Proxy authorization username')
   password: str = pydantic.Field(default=None, description='Proxy authorization password')
 
@@ -118,18 +118,19 @@ async def process_solve_request(
 
   # Adapt proxy format for canonical representation.
   if proxy is not None and not isinstance(proxy, str):
-    if not proxy.url:
-      raise Exception("No url attribute in proxy passed as object")
-    parsed_proxy = urllib3.util.parse_url(proxy.url)
-    proxy = (
-      parsed_proxy.scheme + "://" +
-      (
-        proxy.username + ":" + (proxy.password if proxy.password else '') + '@'
-        if proxy.username else ''
-      ) +
-      parsed_proxy.hostname +
-      (":" + str(parsed_proxy.port) if parsed_proxy.port else '')
-    )
+    if proxy.url is not None:
+      parsed_proxy = urllib3.util.parse_url(proxy.url)
+      proxy = (
+        parsed_proxy.scheme + "://" +
+        (
+          proxy.username + ":" + (proxy.password if proxy.password else '') + '@'
+          if proxy.username else ''
+        ) +
+        parsed_proxy.hostname +
+        (":" + str(parsed_proxy.port) if parsed_proxy.port else '')
+      )
+    else:
+      proxy = None
 
   try:
     solve_request = flare_bypasser.Request()

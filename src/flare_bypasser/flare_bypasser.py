@@ -2,6 +2,7 @@ import abc
 import sys
 import logging
 import os
+import time
 import typing
 import copy
 import random
@@ -444,29 +445,52 @@ class Solver(object):
       raise Solver.Exception(str(e), step=step)
 
   @staticmethod
+  def _get_dominant_color(image):
+    a2D = image.reshape(-1, image.shape[-1])
+    col_range = (256, 256, 256) # generically : a2D.max(0)+1
+    a1D = np.ravel_multi_index(a2D.T, col_range)
+    return np.unravel_index(np.bincount(a1D).argmax(), col_range)
+
+  @staticmethod
   def _get_flare_rect_contours(image, save_steps_dir: str = None):
     image_height, image_width, _ = image.shape
-    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    ret, mask = cv2.threshold(gray_image, 240, 255, 0)
+    if save_steps_dir:
+      cv2.imwrite(os.path.join(save_steps_dir, 'orig_image.jpg'), image)
+
+    #start_cpu_time = time.process_time()
+
+    # Step, that can be runned once
+    dominant_color = Solver._get_dominant_color(image)
+    color_offset = (15, 15, 15)
+    low_color = np.array(list(map(lambda i, j: max(i - j, 0), dominant_color, color_offset)), dtype="uint8")
+    up_color = np.array(list(map(lambda i, j: min(i + j, 255), dominant_color, color_offset)), dtype="uint8")
+
+    # Common steps
+    mask = cv2.inRange(image, low_color, up_color)
+    mask = cv2.bitwise_not(mask)
 
     if save_steps_dir:
       cv2.imwrite(os.path.join(save_steps_dir, 'base_mask.jpg'), mask)
 
-    # Erode little omissions in contours (lost by color range or by image quality).
-    erode_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-    mask = cv2.erode(mask, erode_kernel, iterations = 1)
+    # Dilate little omissions in contours (lost by color range or by image quality).
+    broad_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    mask = cv2.dilate(mask, broad_kernel, iterations = 1)
 
     if save_steps_dir:
-      cv2.imwrite(os.path.join(save_steps_dir, 'eroded_mask.jpg'), mask)
+      cv2.imwrite(os.path.join(save_steps_dir, 'dilated_mask.jpg'), mask)
 
     # Dilate for increase contours detection precision.
-    dilate_kernel = np.array([[1, 1], [1, 0]], dtype=np.uint8)
-    mask = cv2.dilate(mask, dilate_kernel, iterations = 1)
+    narrow_kernel = np.array([[1, 1], [1, 0]], dtype=np.uint8)
+    mask = cv2.erode(mask, narrow_kernel, iterations = 1)
 
     if save_steps_dir:
       cv2.imwrite(os.path.join(save_steps_dir, 'mask_for_contours_detect.jpg'), mask)
 
-    contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    #end_cpu_time = time.process_time()
+
+    contours, hierarchy = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+
+    #end_cpu_time = time.process_time()
 
     rect_contours = []
     for c in contours:
@@ -496,6 +520,7 @@ class Solver(object):
 
   @staticmethod
   def get_flare_click_point(image, logger = None, save_steps_dir: str = None):
+    print("STEP 1")
     rect_contours = Solver._get_flare_rect_contours(image, save_steps_dir=save_steps_dir)
 
     rect_contours = sorted(rect_contours, key=lambda c_pair: c_pair[0])

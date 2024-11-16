@@ -74,6 +74,8 @@ class Request(object):
     if _dict:
       self.__dict__.update(_dict)
 
+  def __str__(self):
+    return str(self.__dict__)
 
 class Response:
   url: str = None
@@ -85,6 +87,8 @@ class Response:
   def __init__(self, _dict):
     self.__dict__.update(_dict)
 
+  def __str__(self):
+    return str(self.__dict__)
 
 class BaseCommandProcessor(object):
   # preprocess url before solve (for example: can replace url with page content for POST request processing)
@@ -230,6 +234,7 @@ class Solver(object):
       raise Exception("Parameter 'url' should be defined.")
 
     try:
+      logger.info("Solve request: " + str(req))
       res = await asyncio.wait_for(self._resolve_challenge(req), req.max_timeout)
       logger.info("Solve result: " + str(res))
     except asyncio.TimeoutError:

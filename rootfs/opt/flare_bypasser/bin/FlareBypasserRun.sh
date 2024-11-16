@@ -102,6 +102,19 @@ export PYTHONPATH=$PYTHONPATH:/opt/flare_bypasser/lib/:/opt/flare_bypasser/exten
 sudo -n find "$WORKSPACE_ROOT" -exec chown "$CURRENT_UID:$CURRENT_GID" {} \;
 mkdir -p "$WORKSPACE_ROOT/log"
 
+# Non critical - simple make chrome happy and disable some its errors.
+# Start dbus for exclude chrome errors:
+# Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+# Failed to connect to the bus: Could not parse server address: Unknown address type
+XDG_RUNTIME_DIR=/run/xdg/
+sudo bash -c "
+sudo service dbus start
+mkdir -p '$XDG_RUNTIME_DIR'
+chmod 700 '$XDG_RUNTIME_DIR'
+chown '$(id -un):$(id -gn)' '$XDG_RUNTIME_DIR'"
+DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+dbus-daemon --session --address="$DBUS_SESSION_BUS_ADDRESS" --nofork --nopidfile --syslog-only &
+
 # Run diagnostic if required
 if [ "$CHECK_SYSTEM" = true ] ; then
   chrome_diagnostic || exit 1

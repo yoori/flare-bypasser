@@ -20,6 +20,8 @@ import cv2
 from .browser_wrapper import BrowserWrapper
 from .proxy_controller import ProxyController
 
+logger = logging.getLogger(__name__)
+
 USER_AGENT = None
 
 _ACCESS_DENIED_TITLES = [
@@ -220,7 +222,7 @@ class Solver(object):
         fp.write(dom)
       self._screenshot_i += 1
 
-      logging.debug("Screenshot saved to '" + screenshot_file_without_ext + "'")
+      logger.debug("Screenshot saved to '" + screenshot_file_without_ext + "'")
 
   async def solve(self, req: Request) -> Response:
     # do some validations
@@ -229,7 +231,7 @@ class Solver(object):
 
     try:
       res = await asyncio.wait_for(self._resolve_challenge(req), req.max_timeout)
-      logging.info("Solve result: " + str(res))
+      logger.info("Solve result: " + str(res))
     except asyncio.TimeoutError:
       raise Exception("Processing timeout (max_timeout=" + str(req.max_timeout) + ")")
     return res
@@ -256,23 +258,35 @@ class Solver(object):
           self._driver: BrowserWrapper = await BrowserWrapper.create(
             use_proxy, disable_gpu = self._disable_gpu
           )
-          logging.info(
+          logger.info(
             'New instance of webdriver has been created to perform the request (proxy=' +
             str(use_proxy) + '), timeout=' + str(req.max_timeout))
           return await self._resolve_challenge_impl(req, start_time)
         finally:
-          logging.info('Close webdriver')
+          logger.info('Close webdriver')
           if self._driver is not None:
             await self._driver.close()
-            self._driver = None
-            logging.debug('A used instance of webdriver has been destroyed')
+            logger.debug('A used instance of webdriver has been destroyed')
+          if logger.isEnabledFor(logging.DEBUG):
+            # Read outputs only after driver close (when process stopped),
+            # otherwise output reading can be blocked.
+            outputs = await self._driver.get_outputs()
+            if outputs:
+              for output_i, output in enumerate(outputs):
+                logger.debug(
+                  "Webdriver output #" + str(output_i) + ":" +
+                  "\n---------------------------------------\n" +
+                  str(output.decode("utf-8")) +
+                  "\n---------------------------------------\n"
+                )
+          self._driver = None
     except Solver.Exception as e:
       error_message = (
         "Error solving the challenge. On platform " + str(sys.platform) +
         " at step '" + str(e.step) + "': " +
         str(e).replace('\n', '\\n')
       )
-      logging.error(error_message)
+      logger.error(error_message)
       raise Solver.Exception(error_message, step=e.step)
     except Exception as e:
       error_message = (
@@ -280,7 +294,7 @@ class Solver(object):
         " at step '" + step + "': " +
         str(e).replace('\n', '\\n')
       )
-      logging.error(error_message)
+      logger.error(error_message)
       raise Solver.Exception(error_message)
 
   async def _check_challenge(self):
@@ -308,7 +322,7 @@ class Solver(object):
     for title in _CHALLENGE_TITLES:
       if title.lower() == page_title.lower():
         challenge_found = True
-        logging.info("Challenge detected. Title found: " + page_title)
+        logger.info("Challenge detected. Title found: " + page_title)
         break
 
     if not challenge_found:
@@ -316,7 +330,7 @@ class Solver(object):
       for selector in _CHALLENGE_SELECTORS:
         if (await driver.select_count(selector)) > 0:
           challenge_found = True
-          logging.info("Challenge detected. Selector found: " + selector)
+          logger.info("Challenge detected. Selector found: " + selector)
           break
 
     return challenge_found
@@ -325,38 +339,38 @@ class Solver(object):
     attempt = 0
 
     while True:
-      logging.info("Challenge step #" + str(attempt))
+      logger.info("Challenge step #" + str(attempt))
       await self.save_screenshot('attempt')
 
       # check that challenge present (wait when it will disappear after click)
       challenge_found = await self._check_challenge()
       if not challenge_found:
-        logging.info("Challenge disappeared on step #" + str(attempt))
+        logger.info("Challenge disappeared on step #" + str(attempt))
         break
 
-      logging.info("To check checkbox presense")
+      logger.info("To check checkbox presense")
       # check that need to click,
       # get screenshot of full page (all elements is in shadowroot)
       # clicking can be required few times.
       page_image = await self._driver.get_screenshot()
       click_coord = Solver.get_flare_click_point(page_image)
       if click_coord:
-        logging.info("Verify checkbot found, click coordinates: " + str(click_coord))
+        logger.info("Verify checkbot found, click coordinates: " + str(click_coord))
         await self.save_screenshot('to_verify_click', image=page_image, mark_coords=click_coord)
         # recheck that challenge present - we can be already redirected and
         # need to exclude click on result page
         challenge_found = await self._check_challenge()
         if not challenge_found:
-          logging.info("Challenge disappeared on step #" + str(attempt))
+          logger.info("Challenge disappeared on step #" + str(attempt))
           break
 
-        logging.info("Click challenge by coords: " + str(click_coord[0]) + ", " + str(click_coord[1]))
+        logger.info("Click challenge by coords: " + str(click_coord[0]) + ", " + str(click_coord[1]))
         await self._driver.click_coords(click_coord)
         await asyncio.sleep(1)
 
         await self.save_screenshot('after_verify_click')
       else :
-        logging.info("Checkbox isn't found")
+        logger.info("Checkbox isn't found")
 
       attempt = attempt + 1
       await asyncio.sleep(_SHORT_TIMEOUT)
@@ -390,17 +404,17 @@ class Solver(object):
       step = 'navigate to url'
       if open_url:
         # navigate to the page
-        logging.debug(f'Navigating to... {req.url}')
+        logger.debug(f'Navigating to... {req.url}')
         await self._driver.get(preprocessed_req.url)
 
-      logging.debug('To make screenshot')
+      logger.debug('To make screenshot')
       await self.save_screenshot('evil_logic')
 
       step = 'set cookies'
 
       # set cookies if required
       if preprocessed_req.cookies :
-        logging.debug('Setting cookies...')
+        logger.debug('Setting cookies...')
         await self._driver.set_cookies(preprocessed_req.cookies)
         await self._driver.get(preprocessed_req.url)
 
@@ -412,22 +426,22 @@ class Solver(object):
 
       if not challenge_found:
         await self.save_screenshot('no_challenge_found')
-        logging.info("Challenge not detected!")
+        logger.info("Challenge not detected!")
         res.message = "Challenge not detected!"
       else:  # first challenge found
         step = 'solve challenge'
-        logging.info("Challenge detected, to solve it")
+        logger.info("Challenge detected, to solve it")
 
         await self._challenge_wait_and_click_loop()
         res.message = "Challenge solved!"  # expect exception if challenge isn't solved
 
-        logging.info("Challenge solving finished")
+        logger.info("Challenge solving finished")
         await self.save_screenshot('solving_finish')
 
       step = 'get cookies'
       res.url = await self._driver.current_url()
       res.cookies = await self._driver.get_cookies()
-      logging.info("Cookies got")
+      logger.info("Cookies got")
       global USER_AGENT
       if USER_AGENT is None:
         step = 'get user-agent'
@@ -438,7 +452,7 @@ class Solver(object):
       res = await command_processor.process_command(res, req, self._driver)
 
       await self.save_screenshot('finish')
-      logging.info('Solving finished')
+      logger.info('Solving finished')
 
       return res
     except Exception as e:
@@ -520,7 +534,6 @@ class Solver(object):
 
   @staticmethod
   def get_flare_click_point(image, logger = None, save_steps_dir: str = None):
-    print("STEP 1")
     rect_contours = Solver._get_flare_rect_contours(image, save_steps_dir=save_steps_dir)
 
     rect_contours = sorted(rect_contours, key=lambda c_pair: c_pair[0])
@@ -580,9 +593,9 @@ os.environ["SSL_CERT_FILE"] = certifi.where()
 
 if __name__ == '__main__':
   sys.stdout.reconfigure(encoding="utf-8")
-  logging.basicConfig(
+  logger.basicConfig(
     format='%(asctime)s [%(name)s] [%(levelname)s]: %(message)s',
-    handlers=[logging.StreamHandler(sys.stdout)],
+    handlers=[logger.StreamHandler(sys.stdout)],
     level=logging.INFO)
 
   req = Request()

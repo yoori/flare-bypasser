@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "flare_bypasser"
-version = "0.1.29"
+version = "0.1.30"
 authors = [
   {name = "yoori", email = "yuri.kuznecov@gmail.com"}
 ]
@@ -24,9 +24,10 @@ dependencies = [
   'opencv-python',
   'certifi==2024.8.30',
   'requests',  # nodriver require it
-  'websockets==14.0', # 14.0 (released at 9 Nov) dropped ClientConnection.closed attribute and break nodriver.
+  'websockets==14.0',
+  # "websockets @ git+https://github.com/yoori/websockets.git",
   'nodriver @ git+https://github.com/yoori/nodriver.git',
-  # < fork with cookie fix, switch to https://github.com/ultrafunkamsterdam/nodriver.git after MR
+  # < fork with fixes
   'argparse',
   'oslex',
   'jinja2',

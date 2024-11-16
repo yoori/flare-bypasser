@@ -7,6 +7,7 @@ import contextlib
 import oslex
 import jinja2
 
+logger = logging.getLogger(__name__)
 
 class ProxyController(object):
   _proxy_cmd_template: jinja2.Template
@@ -137,7 +138,7 @@ class ProxyController(object):
     proxy_cmd = self._proxy_cmd_template.render({
       'LOCAL_PORT': str(proxy_holder._local_port),
       'UPSTREAM_URL': proxy_holder._url})
-    logging.info("Start with: " + str(proxy_cmd))
+    logger.info("Start with: " + str(proxy_cmd))
     proxy_holder._process = subprocess.Popen(
       oslex.split(proxy_cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
@@ -147,7 +148,7 @@ class ProxyController(object):
       del self._proxies_by_url[proxy_holder._url]
       del self._proxies_by_port[proxy_holder._local_port]
       if proxy_holder._process:
-        logging.info("Close proxy for: " + str(proxy_holder._url))
+        logger.info("Close proxy for: " + str(proxy_holder._url))
         proxy_holder._process.kill()
         proxy_holder._process.wait()
         proxy_holder._process = None

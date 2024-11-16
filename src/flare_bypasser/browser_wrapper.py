@@ -99,6 +99,9 @@ class BrowserWrapper(object):
   def get_driver(self):
     return self._page
 
+  async def get_outputs(self):
+    return await self._nodriver_driver.get_outputs()
+
   async def current_url(self):
     return self._page.url
 

@@ -17,6 +17,8 @@ import pydantic
 
 import flare_bypasser
 
+logger = logging.getLogger(__name__)
+
 USE_GUNICORN = (
   sys.platform not in ['win32', 'cygwin'] and 'FLARE_BYPASS_USE_UVICORN' not in os.environ
 )
@@ -382,7 +384,7 @@ def parse_class_command_processors(custom_command_processors_str: str):
       module = importlib.import_module(import_module_name)
       assert hasattr(module, import_class_name)
       cls = getattr(module, import_class_name)
-      logging.info("Loaded user command: " + str(command_name))
+      logger.info("Loaded user command: " + str(command_name))
       result_command_processors[command_name] = cls()
     except Exception as e:
       raise Exception(
@@ -401,7 +403,7 @@ def parse_entrypoint_command_processors(extension: str):
     get_user_commands_method = getattr(module, entry_point)
     user_commands = get_user_commands_method()
     for command_name, command_processor in user_commands.items():
-      logging.info("Loaded user command: " + str(command_name))
+      logger.info("Loaded user command: " + str(command_name))
       result_command_processors[command_name] = command_processor
   except Exception as e:
     raise Exception(
@@ -419,9 +421,6 @@ def server_run():
     )
 
     logging.getLogger('urllib3').setLevel(logging.ERROR)
-    logging.getLogger('flare_bypasser.flare_bypasser').setLevel(logging.INFO)
-    #logging.getLogger('nodriver.core.browser').setLevel(logging.DEBUG)
-    #logging.getLogger('uc.connection').setLevel(logging.DEBUG)
 
     parser = argparse.ArgumentParser(
       description='Start flare_bypass server.',
@@ -443,18 +442,24 @@ def server_run():
       with arguments: LOCAL_PORT, UPSTREAM_URL - proxy passed in request"""
     )
     parser.add_argument("--disable-gpu", action='store_true')
+    parser.add_argument("--verbose", action='store_true')
     parser.add_argument(
       "--debug-dir", type=str, default=None,
       help="""directory for save intermediate DOM dumps and screenshots on solving,
       for each request will be created unique directory"""
     )
-    parser.set_defaults(disable_gpu=False)
+    parser.set_defaults(disable_gpu=False, debug=False)
     args, unknown_args = parser.parse_known_args()
     try:
       host, port = args.bind.split(':')
     except Exception:
       print("Invalid 'bind' argument value: " + str(args.bind), file=sys.stderr, flush=True)
       sys.exit(1)
+
+    if args.verbose:
+      logging.getLogger('nodriver.core.browser').setLevel(logging.DEBUG)
+      logging.getLogger('uc.connection').setLevel(logging.DEBUG)
+      logging.getLogger('flare_bypasser.flare_bypasser').setLevel(logging.DEBUG)
 
     global solver_args
 

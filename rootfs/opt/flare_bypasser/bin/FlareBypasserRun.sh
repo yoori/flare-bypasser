@@ -139,6 +139,10 @@ if [ "$CHROME_DISABLE_GPU" = true ] ; then
   ADD_PARAMS="$ADD_PARAMS --disable-gpu"
 fi
 
+if [ "$VERBOSE" = true ] ; then
+  ADD_PARAMS="$ADD_PARAMS --verbose"
+fi
+
 if [ "$DEBUG" = true ] ; then
   mkdir -p "$WORKSPACE_ROOT/debug"
   ADD_PARAMS="$ADD_PARAMS --debug-dir=$WORKSPACE_ROOT/debug"

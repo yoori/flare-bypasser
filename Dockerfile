@@ -1,6 +1,6 @@
 ARG PYTHON_VERSION=3.11
 
-FROM python:${PYTHON_VERSION}-slim-bullseye AS builder
+FROM python:${PYTHON_VERSION}-slim-bookworm AS builder
 
 ARG CHROME_VERSION=""
 
@@ -55,7 +55,7 @@ RUN . /tmp/build.env ; if [ "$(arch)" != "x86_64" ] ; then \
   fi
 
 
-FROM python:${PYTHON_VERSION}-slim-bullseye
+FROM python:${PYTHON_VERSION}-slim-bookworm
 
 ARG UID=1111
 ARG GID=0
@@ -67,6 +67,7 @@ ENV PACKAGES_DIR=/packages
 ENV CHECK_SYSTEM=${CHECK_SYSTEM}
 ENV CHROME_DISABLE_GPU=${CHROME_DISABLE_GPU}
 ENV DEBUG=false
+ENV VERBOSE=false
 
 # Copy dummy packages
 COPY --from=builder ${PACKAGES_DIR} ${PACKAGES_DIR}

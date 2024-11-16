@@ -5,6 +5,7 @@ import typing
 import typing_extensions
 import datetime
 import copy
+import platform
 import uuid
 import pathlib
 import traceback
@@ -421,6 +422,16 @@ def server_run():
     )
 
     logging.getLogger('urllib3').setLevel(logging.ERROR)
+
+    logger.info(
+      "Start flare_bypass server:\n" +
+      "  version: " + str(flare_bypasser.__version__) + "\n" +
+      "  python version = " + ".".join([str(x) for x in list(sys.version_info)]) + "\n" +
+      "  os = " + " ".join([platform.system(), platform.release(), platform.version()]) + "\n" +
+      "  docker = " + os.environ.get('IN_DOCKER', "false") + "\n" +
+      "  arch = " + str(platform.machine()) + "\n" +
+      "  processor = " + str(platform.processor())
+    )
 
     parser = argparse.ArgumentParser(
       description='Start flare_bypass server.',

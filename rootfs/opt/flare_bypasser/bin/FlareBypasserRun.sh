@@ -96,6 +96,7 @@ set -o pipefail
 CURRENT_UID=$(id -u)
 CURRENT_GID=$(id -g)
 
+export IN_DOCKER=true
 export WORKSPACE_ROOT=/opt/flare_bypasser/var/
 export PYTHONPATH=$PYTHONPATH:/opt/flare_bypasser/lib/:/opt/flare_bypasser/extensions/
 

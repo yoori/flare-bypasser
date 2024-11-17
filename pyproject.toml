@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "flare_bypasser"
-version = "0.1.32"
+version = "0.1.33"
 authors = [
   {name = "yoori", email = "yuri.kuznecov@gmail.com"}
 ]
@@ -23,11 +23,8 @@ dependencies = [
   'urllib3',
   'opencv-python',
   'certifi==2024.8.30',
-  'requests',  # nodriver require it
   'websockets==14.0',
-  # "websockets @ git+https://github.com/yoori/websockets.git",
-  'nodriver @ git+https://github.com/yoori/nodriver.git',
-  # < fork with fixes
+  'zendriver @ git+https://github.com/yoori/zendriver.git',
   'argparse',
   'oslex',
   'jinja2',

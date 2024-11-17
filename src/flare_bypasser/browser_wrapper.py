@@ -8,7 +8,7 @@ import shutil
 
 import cv2
 
-import nodriver
+import zendriver
 
 XVFB_DISPLAY = None
 
@@ -21,7 +21,7 @@ and simplify migration to other driver.
 
 
 class BrowserWrapper(object):
-  _nodriver_driver: nodriver.Browser = None
+  _zendriver_driver: zendriver.Browser = None
   _page = None
 
   class FakePosition(object):
@@ -33,28 +33,28 @@ class BrowserWrapper(object):
   class FakeNode(object):
     attributes = None
 
-  class FakeElement(nodriver.Element):
+  class FakeElement(zendriver.Element):
     _position = None
 
-    def __init__(self, page: nodriver.Tab, center_coords):
+    def __init__(self, page: zendriver.Tab, center_coords):
       super(BrowserWrapper.FakeElement, self).__init__(
-        BrowserWrapper.FakeNode(),  # nodriver.cdp.dom.Node
-        page  # nodriver.Tab
+        BrowserWrapper.FakeNode(),  # zendriver.cdp.dom.Node
+        page  # zendriver.Tab
       )
       self._position = BrowserWrapper.FakePosition(center_coords)
 
     def _make_attrs(self):  # override for exclude exception on __init__
       pass
 
-    # overrides for call only cdp click send in nodriver.Element.mouse_click
+    # overrides for call only cdp click send in zendriver.Element.mouse_click
     async def get_position(self):
       return self._position
 
     async def flash(self, duration: typing.Union[float, int] = 0.5):
       pass
 
-  def __init__(self, nodriver_driver: nodriver.Browser, user_data_dir: str = None):
-    self._nodriver_driver = nodriver_driver
+  def __init__(self, zendriver_driver: zendriver.Browser, user_data_dir: str = None):
+    self._zendriver_driver = zendriver_driver
     self._user_data_dir = user_data_dir
 
   def __del__(self):
@@ -87,11 +87,11 @@ class BrowserWrapper(object):
 
     browser_args += ["--user-data-dir=" + user_data_dir]
     try:
-      nodriver_driver = await nodriver.start(
+      zendriver_driver = await zendriver.start(
         sandbox=False,
         browser_args=browser_args
       )
-      return BrowserWrapper(nodriver_driver, user_data_dir = user_data_dir)
+      return BrowserWrapper(zendriver_driver, user_data_dir = user_data_dir)
     finally:
       shutil.rmtree(user_data_dir, ignore_errors=True)
 
@@ -100,15 +100,15 @@ class BrowserWrapper(object):
     return self._page
 
   async def get_outputs(self):
-    return await self._nodriver_driver.get_outputs()
+    return await self._zendriver_driver.get_outputs()
 
   async def current_url(self):
     return self._page.url
 
   async def close(self):
     self._page = None
-    if self._nodriver_driver:
-      self._nodriver_driver.stop()
+    if self._zendriver_driver:
+      self._zendriver_driver.stop()
     if self._user_data_dir:
       shutil.rmtree(self._user_data_dir, ignore_errors=True)
       self._user_data_dir = None
@@ -125,13 +125,13 @@ class BrowserWrapper(object):
 
   async def get(self, url):
     # we work only with one page - close all tabs (excluding first - this close browser)
-    for tab_i, tab in enumerate(self._nodriver_driver.tabs):
+    for tab_i, tab in enumerate(self._zendriver_driver.tabs):
       if tab_i > 0:
         await tab.close()
-    self._page = await self._nodriver_driver.get(url)
+    self._page = await self._zendriver_driver.get(url)
 
   async def click_coords(self, coords):
-    # Specific workaround for nodriver
+    # Specific workaround for zendriver
     # click by coordinates without no driver patching.
     step = "start"
     try:
@@ -147,7 +147,7 @@ class BrowserWrapper(object):
 
   async def get_dom(self):
     res_dom = await self._page.get_content()
-    return (res_dom if res_dom is not None else "")  # nodriver return None sometimes (on error)
+    return (res_dom if res_dom is not None else "")  # zendriver return None sometimes (on error)
 
   async def get_screenshot(self):  # Return screenshot as cv2 image (numpy array)
     tmp_file_path = None
@@ -157,7 +157,7 @@ class BrowserWrapper(object):
           tmp_file_path = os.path.join("/tmp", str(uuid.uuid4()) + ".jpg")
           await self._page.save_screenshot(tmp_file_path)
           return cv2.imread(tmp_file_path)
-        except nodriver.core.connection.ProtocolException as e:
+        except zendriver.core.connection.ProtocolException as e:
           if "not finished loading yet" not in str(e):
             raise
         await asyncio.sleep(1)
@@ -170,7 +170,7 @@ class BrowserWrapper(object):
       try:
         await self._page.save_screenshot(image_path)
         return
-      except nodriver.core.connection.ProtocolException as e:
+      except zendriver.core.connection.ProtocolException as e:
         if "not finished loading yet" not in str(e):
           raise
       await asyncio.sleep(1)
@@ -198,14 +198,14 @@ class BrowserWrapper(object):
         None,  # comment_url
         None   # rest
       ))
-    await self._nodriver_driver.cookies.set_all(cookie_jar)
+    await self._zendriver_driver.cookies.set_all(cookie_jar)
 
   async def get_cookies(self) -> list[dict]:
     # return list of dict have format: {"name": "...", "value": "..."}
-    nodriver_cookies = await self._nodriver_driver.cookies.get_all(requests_cookie_format=True)
+    zendriver_cookies = await self._zendriver_driver.cookies.get_all(requests_cookie_format=True)
     res = []
     # convert array of http.cookiejar.Cookie to expected cookie format
-    for cookie in nodriver_cookies:
+    for cookie in zendriver_cookies:
       res.append({
         "name": cookie.name,
         "value": cookie.value,

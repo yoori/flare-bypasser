@@ -5,7 +5,7 @@ work to solve the challenge after October 20, 2024.
 ## How it works
 
 FlareBypasser starts a server, and it waits for user requests.
-When some request arrives, it uses [nodriver](https://github.com/ultrafunkamsterdam/nodriver)
+When some request arrives, it uses [zendriver](https://github.com/stephanlensky/zendriver)
 to create a web browser (Chrome). It opens the URL with user parameters and waits until the Cloudflare challenge
 is solved (or timeout). The cookies are sent back to the user, and those cookies can be used to
 bypass Cloudflare using other HTTP clients.

@@ -4,7 +4,6 @@ services:
       args:
         #CHROME_VERSION: '131.'
         UID: 1001
-        # VERBOSE: true
         # CHROME_DISABLE_GPU: true
         # CHECK_SYSTEM: true
         # PYTHON_VERSION: 3.11
@@ -12,6 +11,7 @@ services:
       dockerfile: Dockerfile
     #environment:
     #  DEBUG: true
+    #  VERBOSE: true
     container_name: flare-bypasser
     image: flare-bypasser:latest
     ports:

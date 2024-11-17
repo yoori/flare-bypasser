@@ -174,7 +174,7 @@ class Solver(object):
   _proxy_controller: ProxyController = None
   _disable_gpu: bool = False
   _screenshot_i: int = 0
-  _debug_dir: bool = True
+  _debug_dir: str = None
 
   class Exception(Exception):
     step = None
@@ -185,9 +185,9 @@ class Solver(object):
 
   def __init__(
     self, proxy: str = None, command_processors: typing.Dict[str, BaseCommandProcessor] = {},
-    proxy_controller=None,
-    disable_gpu=False,
-    debug_dir=None
+    proxy_controller = None,
+    disable_gpu = False,
+    debug_dir: str = None
   ):
     self._proxy = proxy
     self._driver = None

@@ -108,7 +108,7 @@ class BrowserWrapper(object):
   async def close(self):
     self._page = None
     if self._zendriver_driver:
-      self._zendriver_driver.stop()
+      await self._zendriver_driver.stop()
     if self._user_data_dir:
       shutil.rmtree(self._user_data_dir, ignore_errors=True)
       self._user_data_dir = None

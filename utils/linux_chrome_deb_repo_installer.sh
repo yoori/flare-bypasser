@@ -19,8 +19,10 @@ apt list --all-versions 2>/dev/null | grep -E '^(google-chrome-|chromium/)' | \
   tr '\t' ' ' >/tmp/available_all_chrome_versions
 
 ARCH_SYNONYMS="$(arch)"
-if [ "$ARCH_SYNONYMS" = "aarch64" ] ; then
+if [ "$ARCH_SYNONYMS" = "aarch64" -o "$ARCH_SYNONYMS" = "arm64" ] ; then
   ARCH_SYNONYMS="aarch64|arm64"
+elif [ "$ARCH_SYNONYMS" = "armv7l" -o "$ARCH_SYNONYMS" = "armhf" ] ; then
+  ARCH_SYNONYMS="armv7l|armhf"
 fi
 
 cat /tmp/available_all_chrome_versions | awk -F' ' '{if($3 ~ /^'"$ARCH_SYNONYMS"'$/){print $0}}' \

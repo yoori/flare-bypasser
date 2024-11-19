@@ -10,9 +10,9 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      UNUSED: false
-      # DEBUG: true
-      # VERBOSE: true
+      UNUSED: "false"
+      # DEBUG: "true"
+      # VERBOSE: "true"
     container_name: flare-bypasser
     image: flare-bypasser:latest
     ports:

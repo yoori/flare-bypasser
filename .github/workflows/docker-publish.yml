@@ -28,6 +28,12 @@ jobs:
         include:
           - builder: ubuntu-latest
             platform: linux/amd64
+          - builder: ubuntu-latest
+            platform: linux/arm64
+          - builder: ubuntu-latest
+            platform: linux/arm/v6
+          - builder: ubuntu-latest
+            platform: linux/arm/v7
 
     runs-on: ${{ matrix.builder }}
 

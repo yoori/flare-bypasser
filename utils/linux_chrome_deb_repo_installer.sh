@@ -15,10 +15,15 @@ echo 'deb [arch=amd64] https://dl.google.com/linux/chrome/deb/ stable main' >>/e
 apt update -y --no-install-recommends >/dev/null 2>&1
 mkdir -p "$INSTALL_ROOT"
 
-apt list --all-versions 2>/dev/null | grep -E '^(google-chrome-.*|chromium/)' | \
+apt list --all-versions 2>/dev/null | grep -E '^(google-chrome-|chromium/)' | \
   tr '\t' ' ' >/tmp/available_all_chrome_versions
 
-cat /tmp/available_all_chrome_versions | awk -F' ' '{if($3 = "'"$(arch)"'"){print $0}}' \
+ARCH_SYNONYMS="$(arch)"
+if [ "$ARCH_SYNONYMS" = "aarch64" ] ; then
+  ARCH_SYNONYMS="aarch64|arm64"
+fi
+
+cat /tmp/available_all_chrome_versions | awk -F' ' '{if($3 ~ /^'"$ARCH_SYNONYMS"'$/){print $0}}' \
   >/tmp/available_platform_chrome_versions
 
 FOUND_VERSION=$(cat /tmp/available_platform_chrome_versions |
@@ -43,7 +48,7 @@ pushd /tmp/chrome_download >/dev/null 2>&1
 
 apt download "$FOUND_VERSION" >/tmp/chrome_install.err 2>&1 || (
   echo "Chrome install failed:" >&2 ; cat /tmp/chrome_install.err >&2 ;
-  echo "Available versions: " >&2 ; cat /tmp/available_chrome_versions >&2 ;
+  echo "Available versions: " >&2 ; cat /tmp/available_platform_chrome_versions >&2 ;
   exit 1 ;
 ) || exit 1
 

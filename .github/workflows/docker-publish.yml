@@ -6,14 +6,13 @@ name: Docker
 # documentation.
 
 on:
-  schedule:
-    - cron: '21 14 * * *'
   push:
     branches: [ "main" ]
     # Publish semver tags as releases.
     tags: [ 'v*.*.*' ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
 
 env:
   # Use docker.io for Docker Hub if empty
@@ -29,8 +28,6 @@ jobs:
         include:
           - builder: ubuntu-latest
             platform: linux/amd64
-          - builder: ubuntu-latest
-            platform: linux/arm64
 
     runs-on: ${{ matrix.builder }}
 

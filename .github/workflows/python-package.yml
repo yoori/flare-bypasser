@@ -53,6 +53,5 @@ jobs:
       run: |
         # preinstall fresh numpy for exclude trying of installation version with install error:
         # https://github.com/numpy/numpy/issues/27405
-        python -m pip install numpy>=2.0.2
-        python -m pip install --prefer-binary .
+        PIP_IGNORE_INSTALLED=0 python -m pip install --prefer-binary .
         pytest

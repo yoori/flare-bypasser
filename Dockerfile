@@ -114,7 +114,7 @@ WORKDIR /app
 RUN apt-get update && apt install -y python3-opencv
 
 COPY . flare_bypasser
-RUN pip install flare_bypasser/
+RUN pip install --prefer-binary flare_bypasser/
 
 COPY rootfs /
 

@@ -30,6 +30,8 @@ jobs:
     - name: Trust ubuntu GPG keys
       run: |
         sudo gpg --keyserver "hkps://keyserver.ubuntu.com:443" --recv-keys 40976EAF437D05B5 3B4FE6ACC0B21F32
+        sudo gpg --yes --output "/etc/apt/trusted.gpg.d/40976EAF437D05B5.gpg" --export "40976EAF437D05B5"
+        sudo gpg --yes --output "/etc/apt/trusted.gpg.d/3B4FE6ACC0B21F32.gpg" --export "3B4FE6ACC0B21F32"
         sudo add-apt-repository deb http://security.ubuntu.com/ubuntu xenial-security main
         sudo apt-get update
     - uses: Dovyski/setup-opencv-action@v1.1

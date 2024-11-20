@@ -29,6 +29,7 @@ if USE_GUNICORN:
 else:
   import uvicorn.main
 
+
 # Remove requirement for Content-Type header presence.
 class RemoveContentTypeRequirementMiddleware(object):
   def __init__(self, app):
@@ -37,7 +38,7 @@ class RemoveContentTypeRequirementMiddleware(object):
   async def __call__(self, scope, receive, send):
     headers = scope["headers"]
     content_type_found = False
-    for header_index, header in enumerate(headers) :
+    for header_index, header in enumerate(headers):
       if not isinstance(header, tuple) or len(header) != 2:
         # Unexpected headers format - don't make something.
         content_type_found = True
@@ -50,6 +51,7 @@ class RemoveContentTypeRequirementMiddleware(object):
       headers.append((b'content-type', b'application/json'))
 
     return await self._app(scope, receive, send)
+
 
 server = fastapi.FastAPI(
   openapi_url='/docs/openapi.json',
@@ -413,6 +415,55 @@ def parse_entrypoint_command_processors(extension: str):
   return result_command_processors
 
 
+def init_args_parser():
+  parser = argparse.ArgumentParser(
+    description='Start flare_bypass server.',
+    epilog='Other arguments will be passed to gunicorn or uvicorn(win32) as is.')
+  parser.add_argument("-b", "--bind", type=str, default='127.0.0.1:8000')
+  # < parse for pass to gunicorn as is and as "--host X --port X" to uvicorn
+  parser.add_argument("--extensions", nargs='*', type=str)
+  parser.add_argument(
+    "--proxy-listen-start-port", type=int, default=10000,
+    help="""Port interval start, that can be used for up local proxies on request processing"""
+  )
+  parser.add_argument(
+    "--proxy-listen-end-port", type=int, default=20000,
+    help="""Port interval end for up local proxies"""
+  )
+  parser.add_argument(
+    "--proxy-command", type=str,
+    default="gost -L=socks5://127.0.0.1:{{LOCAL_PORT}} -F='{{UPSTREAM_URL}}'",
+    help="""command template (jinja2), that will be used for up proxy for process request
+    with arguments: LOCAL_PORT, UPSTREAM_URL - proxy passed in request"""
+  )
+  parser.add_argument("--disable-gpu", action='store_true')
+  parser.add_argument("--verbose", action='store_true')
+  parser.add_argument(
+    "--debug-dir", type=str, default=None,
+    help="""directory for save intermediate DOM dumps and screenshots on solving,
+    for each request will be created unique directory"""
+  )
+  parser.set_defaults(disable_gpu=False, debug=False)
+  return parser
+
+
+def init_extensions(args):
+  global solver_args
+
+  # FLARE_BYPASS_COMMANDPROCESSORS format: <command>:<module>.<class>
+  # class should have default constructor (without parameters)
+  custom_command_processors_str = os.environ.get('FLARE_BYPASS_COMMANDPROCESSORS', None)
+  if custom_command_processors_str:
+    solver_args['command_processors'].update(
+      parse_class_command_processors(custom_command_processors_str))
+
+  if args.extensions:
+    for extension in args.extensions:
+      # Expect that extension element has format: <module>.<method>
+      solver_args['command_processors'].update(
+        parse_entrypoint_command_processors(extension))
+
+
 def server_run():
   try:
     logging.basicConfig(
@@ -433,33 +484,7 @@ def server_run():
       "  processor = " + str(platform.processor())
     )
 
-    parser = argparse.ArgumentParser(
-      description='Start flare_bypass server.',
-      epilog='Other arguments will be passed to gunicorn or uvicorn(win32) as is.')
-    parser.add_argument("-b", "--bind", type=str, default='127.0.0.1:8000')
-    # < parse for pass to gunicorn as is and as "--host X --port X" to uvicorn
-    parser.add_argument("--extensions", nargs='*', type=str)
-    parser.add_argument("--proxy-listen-start-port", type=int, default=10000,
-      help="""Port interval start, that can be used for up local proxies on request processing"""
-    )
-    parser.add_argument(
-      "--proxy-listen-end-port", type=int, default=20000,
-      help="""Port interval end for up local proxies"""
-    )
-    parser.add_argument(
-      "--proxy-command", type=str,
-      default="gost -L=socks5://127.0.0.1:{{LOCAL_PORT}} -F='{{UPSTREAM_URL}}'",
-      help="""command template (jinja2), that will be used for up proxy for process request
-      with arguments: LOCAL_PORT, UPSTREAM_URL - proxy passed in request"""
-    )
-    parser.add_argument("--disable-gpu", action='store_true')
-    parser.add_argument("--verbose", action='store_true')
-    parser.add_argument(
-      "--debug-dir", type=str, default=None,
-      help="""directory for save intermediate DOM dumps and screenshots on solving,
-      for each request will be created unique directory"""
-    )
-    parser.set_defaults(disable_gpu=False, debug=False)
+    parser = init_args_parser()
     args, unknown_args = parser.parse_known_args()
     try:
       host, port = args.bind.split(':')
@@ -474,18 +499,7 @@ def server_run():
 
     global solver_args
 
-    # FLARE_BYPASS_COMMANDPROCESSORS format: <command>:<module>.<class>
-    # class should have default constructor (without parameters)
-    custom_command_processors_str = os.environ.get('FLARE_BYPASS_COMMANDPROCESSORS', None)
-    if custom_command_processors_str:
-      solver_args['command_processors'].update(
-        parse_class_command_processors(custom_command_processors_str))
-
-    if args.extensions:
-      for extension in args.extensions:
-        # Expect that extension element has format: <module>.<method>
-        solver_args['command_processors'].update(
-          parse_entrypoint_command_processors(extension))
+    init_extensions(args)
 
     if args.debug_dir:
       logging.getLogger('flare_bypasser.flare_bypasser').setLevel(logging.DEBUG)

@@ -9,6 +9,7 @@ import jinja2
 
 logger = logging.getLogger(__name__)
 
+
 class ProxyController(object):
   _proxy_cmd_template: jinja2.Template
   _lock: threading.Lock

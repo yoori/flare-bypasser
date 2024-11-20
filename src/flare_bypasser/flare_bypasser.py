@@ -2,7 +2,6 @@ import abc
 import sys
 import logging
 import os
-import time
 import typing
 import copy
 import random
@@ -77,6 +76,7 @@ class Request(object):
   def __str__(self):
     return str(self.__dict__)
 
+
 class Response:
   url: str = None
   cookies: list = None
@@ -89,6 +89,7 @@ class Response:
 
   def __str__(self):
     return str(self.__dict__)
+
 
 class BaseCommandProcessor(object):
   # preprocess url before solve (for example: can replace url with page content for POST request processing)
@@ -374,7 +375,7 @@ class Solver(object):
         await asyncio.sleep(1)
 
         await self.save_screenshot('after_verify_click')
-      else :
+      else:
         logger.info("Checkbox isn't found")
 
       attempt = attempt + 1
@@ -418,7 +419,7 @@ class Solver(object):
       step = 'set cookies'
 
       # set cookies if required
-      if preprocessed_req.cookies :
+      if preprocessed_req.cookies:
         logger.debug('Setting cookies...')
         await self._driver.set_cookies(preprocessed_req.cookies)
         await self._driver.get(preprocessed_req.url)
@@ -466,7 +467,7 @@ class Solver(object):
   @staticmethod
   def _get_dominant_color(image):
     a2D = image.reshape(-1, image.shape[-1])
-    col_range = (256, 256, 256) # generically : a2D.max(0)+1
+    col_range = (256, 256, 256)  # generically : a2D.max(0)+1
     a1D = np.ravel_multi_index(a2D.T, col_range)
     return np.unravel_index(np.bincount(a1D).argmax(), col_range)
 
@@ -476,7 +477,7 @@ class Solver(object):
     if save_steps_dir:
       cv2.imwrite(os.path.join(save_steps_dir, 'orig_image.jpg'), image)
 
-    #start_cpu_time = time.process_time()
+    # start_cpu_time = time.process_time()
 
     # Step, that can be runned once
     dominant_color = Solver._get_dominant_color(image)
@@ -505,11 +506,11 @@ class Solver(object):
     if save_steps_dir:
       cv2.imwrite(os.path.join(save_steps_dir, 'mask_for_contours_detect.jpg'), mask)
 
-    #end_cpu_time = time.process_time()
+    # end_cpu_time = time.process_time()
 
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
 
-    #end_cpu_time = time.process_time()
+    # end_cpu_time = time.process_time()
 
     rect_contours = []
     for c in contours:

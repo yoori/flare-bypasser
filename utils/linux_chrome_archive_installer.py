@@ -37,7 +37,7 @@ def download_and_install(version_prefix = None, install_root = None, arch = 'x86
   # here no archive of versions for linux/arm64
   if arch == 'x86_64':
     target_platform = "linux64"
-  else :
+  else:
     raise Exception("Unknown or unsupported platform: " + str(arch))
 
   chrome_download_url = None

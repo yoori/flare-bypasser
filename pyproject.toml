@@ -21,7 +21,7 @@ dependencies = [
   'asyncio',
   'uuid',
   'urllib3',
-  'numpy>=2.0.2',
+  'numpy',
   'opencv-python',
   'certifi==2024.8.30',
   'websockets==14.0',

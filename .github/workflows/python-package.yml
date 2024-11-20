@@ -34,7 +34,7 @@ jobs:
         sudo gpg --yes --output "/etc/apt/trusted.gpg.d/3B4FE6ACC0B21F32.gpg" --export "3B4FE6ACC0B21F32"
         sudo add-apt-repository deb http://security.ubuntu.com/ubuntu xenial-security main
         sudo apt-get update
-        sudo apt-get install libopencv-dev
+        sudo apt-get install libopencv-dev python3-opencv
     #- uses: Dovyski/setup-opencv-action@v1.1
     #  with:
     #    opencv-version: '4.0.0'

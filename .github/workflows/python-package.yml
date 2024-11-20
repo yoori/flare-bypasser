@@ -29,8 +29,7 @@ jobs:
     # Install opencv as package
     - name: Trust ubuntu GPG keys
       run: |
-        sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 6494C6D6997C215E
-        sudo apt update
+        sudo gpg --keyserver "hkps://keyserver.ubuntu.com:443" --recv-keys 40976EAF437D05B5 3B4FE6ACC0B21F32
     - uses: Dovyski/setup-opencv-action@v1.1
       with:
         opencv-version: '4.0.0'

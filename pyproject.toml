@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "flare_bypasser"
-version = "0.1.34"
+version = "0.1.35"
 authors = [
   {name = "yoori", email = "yuri.kuznecov@gmail.com"}
 ]
@@ -16,27 +16,7 @@ description = ""
 readme = "README.md"
 license = {text = 'GNU Lesser General Public License'}
 requires-python = ">=3.9"
-
-dependencies = [
-  'asyncio',
-  'uuid',
-  'urllib3',
-  'numpy',
-  'opencv-python',
-  'certifi==2024.8.30',
-  'websockets==14.0',
-  'zendriver @ git+https://github.com/yoori/zendriver.git',
-  'argparse',
-  'oslex',
-  'jinja2',
-
-  # Server dependecies
-  'fastapi',
-  'uvicorn',
-
-  'xvfbwrapper==0.2.9 ; platform_system != "Windows"',
-  'gunicorn ; platform_system != "Windows"',
-]
+dynamic = ["dependencies"]
 
 [project.urls]
 homepage = "https://github.com/yoori/flare-bypasser"

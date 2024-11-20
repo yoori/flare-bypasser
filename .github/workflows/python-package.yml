@@ -54,7 +54,7 @@ jobs:
         python -m pip install opencv-contrib-python numpy
     - name: Install package
       run: |
-        python -m pip install .
+        python -m pip install --prefer-binary .
     - name: Test with pytest
       run: |
         pytest

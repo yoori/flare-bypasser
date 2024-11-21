@@ -171,6 +171,7 @@ class Solver(object):
   _disable_gpu: bool = False
   _screenshot_i: int = 0
   _debug_dir: str = None
+  _log_prefix: str = ''
 
   class Exception(Exception):
     step = None
@@ -183,7 +184,8 @@ class Solver(object):
     self, proxy: str = None, command_processors: typing.Dict[str, BaseCommandProcessor] = {},
     proxy_controller = None,
     disable_gpu = False,
-    debug_dir: str = None
+    debug_dir: str = None,
+    log_prefix: str = '',
   ):
     self._proxy = proxy
     self._driver = None
@@ -201,6 +203,7 @@ class Solver(object):
     self._command_processors['make_post'] = make_post_command_processor
     self._command_processors['request.post'] = make_post_command_processor
     self._disable_gpu = disable_gpu
+    self._log_prefix = log_prefix
 
   async def save_screenshot(self, step_name, image=None, mark_coords=None):
     if self._debug_dir:
@@ -238,6 +241,7 @@ class Solver(object):
       self._screenshot_i += 1
 
       logger.debug(
+        self._log_prefix +
         "Screenshot saved to '" + screenshot_file_without_ext + "'" +
         ('(screenshot failed)' if screenshot_failed else '') +
         ('(dom getting failed)' if get_dom_failed else '')
@@ -249,9 +253,9 @@ class Solver(object):
       raise Exception("Parameter 'url' should be defined.")
 
     try:
-      logger.info("Solve request: " + str(req))
+      logger.info(self._log_prefix + "Solve request: " + str(req))
       res = await asyncio.wait_for(self._resolve_challenge(req), req.max_timeout)
-      logger.info("Solve result: " + str(res))
+      logger.info(self._log_prefix + "Solve result: " + str(res))
     except asyncio.TimeoutError:
       raise Exception("Processing timeout (max_timeout=" + str(req.max_timeout) + ")")
     return res
@@ -279,14 +283,15 @@ class Solver(object):
             use_proxy, disable_gpu = self._disable_gpu
           )
           logger.info(
+            self._log_prefix +
             'New instance of webdriver has been created to perform the request (proxy=' +
             str(use_proxy) + '), timeout=' + str(req.max_timeout))
           return await self._resolve_challenge_impl(req, start_time)
         finally:
-          logger.info('Close webdriver')
+          logger.info(self._log_prefix + 'Close webdriver')
           if self._driver is not None:
             await self._driver.close()
-            logger.debug('A used instance of webdriver has been destroyed')
+            logger.debug(self._log_prefix + 'A used instance of webdriver has been destroyed')
           if logger.isEnabledFor(logging.DEBUG):
             # Read outputs only after driver close (when process stopped),
             # otherwise output reading can be blocked.
@@ -294,6 +299,7 @@ class Solver(object):
             if outputs:
               for output_i, output in enumerate(outputs):
                 logger.debug(
+                  self._log_prefix +
                   "Webdriver output #" + str(output_i) + ":" +
                   "\n---------------------------------------\n" +
                   str(output.decode("utf-8")) +
@@ -306,7 +312,7 @@ class Solver(object):
         " at step '" + str(e.step) + "': " +
         str(e).replace('\n', '\\n')
       )
-      logger.error(error_message)
+      logger.error(self._log_prefix + error_message)
       raise Solver.Exception(error_message, step=e.step)
     except Exception as e:
       error_message = (
@@ -314,7 +320,7 @@ class Solver(object):
         " at step '" + step + "': " +
         str(e).replace('\n', '\\n')
       )
-      logger.error(error_message)
+      logger.error(self._log_prefix + error_message)
       raise Solver.Exception(error_message)
 
   """
@@ -356,7 +362,7 @@ class Solver(object):
     for title in _CHALLENGE_TITLES:
       if title.lower() == page_title.lower():
         challenge_found = True
-        logger.info("Challenge detected. Title found: " + page_title)
+        logger.info(self._log_prefix + "Challenge detected. Title found: " + page_title)
         break
 
     if not challenge_found:
@@ -364,7 +370,7 @@ class Solver(object):
       for selector in _CHALLENGE_SELECTORS:
         if (await self._driver.select_count(selector)) > 0:
           challenge_found = True
-          logger.info("Challenge detected. Selector found: " + selector)
+          logger.info(self._log_prefix + "Challenge detected. Selector found: " + selector)
           break
 
     return challenge_found
@@ -373,14 +379,14 @@ class Solver(object):
     attempt = 0
 
     while True:
-      logger.info("Challenge step #" + str(attempt))
+      logger.info(self._log_prefix + "Challenge step #" + str(attempt))
       await self.save_screenshot('attempt')
 
       # check that challenge present (wait when it will disappear after click)
       challenge_found = await self._check_challenge()
 
       if challenge_found:
-        logger.info("To check checkbox presense")
+        logger.info(self._log_prefix + "To check checkbox presense")
         # check that need to click,
         # get screenshot of full page (all elements is in shadowroot)
         # clicking can be required few times.
@@ -388,26 +394,29 @@ class Solver(object):
         click_coord = Solver.get_flare_click_point(page_image)
 
         if click_coord:
-          logger.info("Verify checkbot found, click coordinates: " + str(click_coord))
+          logger.info(self._log_prefix + "Verify checkbot found, click coordinates: " + str(click_coord))
           await self.save_screenshot('to_verify_click', image=page_image, mark_coords=click_coord)
           # recheck that challenge present - we can be already redirected and
           # need to exclude click on result page
           challenge_found = await self._check_challenge()
           if not challenge_found:
-            logger.info("Challenge disappeared on step #" + str(attempt))
+            logger.info(self._log_prefix + "Challenge disappeared on step #" + str(attempt))
             break
 
-          logger.info("Click challenge by coords: " + str(click_coord[0]) + ", " + str(click_coord[1]))
+          logger.info(
+            self._log_prefix +
+            "Click challenge by coords: " + str(click_coord[0]) + ", " + str(click_coord[1])
+          )
           await self._driver.click_coords(click_coord)
           await asyncio.sleep(1)
 
           await self.save_screenshot('after_verify_click')
         else:
-          logger.info("Checkbox isn't found")
+          logger.info(self._log_prefix + "Checkbox isn't found")
       elif challenge_found is None:  # < Page isn't loaded.
         logger.info("Page isn't loaded on step #" + str(attempt))
       else:  # < Challenge isn't found.
-        logger.info("Challenge disappeared on step #" + str(attempt))
+        logger.info(self._log_prefix + "Challenge disappeared on step #" + str(attempt))
         break
 
       attempt = attempt + 1
@@ -442,17 +451,17 @@ class Solver(object):
       step = 'navigate to url'
       if open_url:
         # navigate to the page
-        logger.debug(f'Navigating to... {req.url}')
+        logger.debug(self._log_prefix + f'Navigating to... {req.url}')
         await self._driver.get(preprocessed_req.url)
 
-      logger.debug('To make screenshot')
+      logger.debug(self._log_prefix + 'To make screenshot')
       await self.save_screenshot('evil_logic')
 
       step = 'set cookies'
 
       # set cookies if required
       if preprocessed_req.cookies:
-        logger.debug('Setting cookies...')
+        logger.debug(self._log_prefix + 'Setting cookies...')
         await self._driver.set_cookies(preprocessed_req.cookies)
         await self._driver.get(preprocessed_req.url)
 
@@ -464,22 +473,22 @@ class Solver(object):
 
       if not challenge_found:
         await self.save_screenshot('no_challenge_found')
-        logger.info("Challenge not detected!")
+        logger.info(self._log_prefix + "Challenge not detected!")
         res.message = "Challenge not detected!"
       else:  # first challenge found
         step = 'solve challenge'
-        logger.info("Challenge detected, to solve it")
+        logger.info(self._log_prefix + "Challenge detected, to solve it")
 
         await self._challenge_wait_and_click_loop()
         res.message = "Challenge solved!"  # expect exception if challenge isn't solved
 
-        logger.info("Challenge solving finished")
+        logger.info(self._log_prefix + "Challenge solving finished")
         await self.save_screenshot('solving_finish')
 
       step = 'get cookies'
       res.url = await self._driver.current_url()
       res.cookies = await self._driver.get_cookies()
-      logger.info("Cookies got")
+      logger.info(self._log_prefix + "Cookies got")
       global USER_AGENT
       if USER_AGENT is None:
         step = 'get user-agent'
@@ -490,7 +499,7 @@ class Solver(object):
       res = await command_processor.process_command(res, req, self._driver)
 
       await self.save_screenshot('finish')
-      logger.info('Solving finished')
+      logger.info(self._log_prefix + 'Solving finished')
 
       return res
     except Exception as e:
@@ -596,7 +605,7 @@ class Solver(object):
       cv2.imwrite(os.path.join(save_steps_dir, 'image_with_rect_contours.png'), debug_image)
 
     if logger:
-      logger.debug("Found " + str(len(rect_contours)) + " contours")
+      logger.debug(self._log_prefix + "Found " + str(len(rect_contours)) + " contours")
 
     # Now we should find two rect contours (one inside other) with ratio 1-5%, (now I see: 0.0213).
     if len(rect_contours) > 1:
@@ -608,6 +617,7 @@ class Solver(object):
           area_ratio = area1 / area2
           if logger:
             logger.debug(
+              self._log_prefix +
               "Areas ratio #" + str(area1_index) + "/#" + str(area2_index) + ": " +
               str(area_ratio)
             )

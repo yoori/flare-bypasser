@@ -8,6 +8,7 @@ import copy
 import platform
 import uuid
 import pathlib
+import asyncio
 import traceback
 import importlib
 import logging
@@ -77,6 +78,11 @@ solver_args = {
 }
 
 
+request_processing_default_args = {
+  'forks': []
+}
+
+
 class ProxyModel(pydantic.BaseModel):
   url: str = pydantic.Field(default=None, description='Proxy url')
   username: str = pydantic.Field(default=None, description='Proxy authorization username')
@@ -92,6 +98,13 @@ class CookieModel(pydantic.BaseModel):
   secure: typing.Optional[bool] = pydantic.Field(default=True, description='Cookie is secure')
   expires: typing.Optional[int] = pydantic.Field(
     default=None, description='Cookie expire time in seconds after epoch start'
+  )
+
+
+class DefferedForksModel(pydantic.BaseModel):
+  forks: int = pydantic.Field(description='Number of tasks for run after delay')
+  delay: float = pydantic.Field(
+    description="Delay for start forks after starting (if some fork didn't solve challenge"
   )
 
 
@@ -138,13 +151,23 @@ async def wait_first_non_exception(tasks, return_condition = lambda x: True):
   return (None, skipped_results, exceptions)
 
 
+async def deffered_call(task, timeout: float):
+  if timeout > 0:
+    await asyncio.sleep(timeout)
+  return await task()
+
+
 async def solve(
   solve_request: flare_bypasser.Request,
   proxy: str = None,
+  log_prefix: str = '',
   solver_args: dict = {}
 ):
+  logger.info(log_prefix + "Solve start")
+
   solver = flare_bypasser.Solver(
     proxy=proxy,
+    log_prefix=log_prefix,
     **solver_args)
   return await solver.solve(solve_request)
 
@@ -156,7 +179,7 @@ async def process_solve_request(
   max_timeout: int = None,  # in msec.
   proxy: typing.Union[str, ProxyModel] = None,
   params: dict = {},
-  forks: int = 1  # < Number of forks for solve. Usable for sites with unstable loading.
+  forks: typing.List[DefferedForksModel] = None  # < Forks for solve. Usable for sites with unstable loading.
 ):
   start_timestamp = datetime.datetime.timestamp(datetime.datetime.now())
 
@@ -195,11 +218,38 @@ async def process_solve_request(
       pathlib.Path(debug_dir).mkdir(parents=True, exist_ok=True)
       local_solver_args['debug_dir'] = debug_dir
 
+    cur_fork_i = 0
     solve_tasks = []
-    for i in range(forks):
-      solve_tasks.append([lambda: solve(solve_request, proxy = proxy, solver_args = local_solver_args)])
+    solve_tasks.append(
+      lambda fork_i = cur_fork_i: solve(
+        solve_request, proxy = proxy, solver_args = local_solver_args,
+        log_prefix=("fork #" + str(fork_i) + ", ")
+      )
+    )
+    cur_fork_i += 1
 
-    solve_response = wait_first_non_exception(solve_tasks)
+    if forks is None:
+      global request_processing_default_args
+      forks = request_processing_default_args['forks']
+
+    if forks:
+      for forks_model in forks:
+        for i in range(forks_model.forks):
+          solve_tasks.append(
+            lambda fork_i = cur_fork_i: deffered_call(
+              lambda: solve(
+                solve_request, proxy = proxy, solver_args = local_solver_args,
+                log_prefix=("fork #" + str(fork_i) + ", ")
+              ),
+              forks_model.delay
+            )
+          )
+          cur_fork_i += 1
+
+    logger.info('Start solve_tasks = ' + str(solve_tasks))
+    solve_response, _skipped_results, _exceptions = await wait_first_non_exception(solve_tasks)
+    # < solve_response can't be None if no return_condition passed to wait_first_non_exception,
+    # only exception expected
 
     return HandleCommandResponse(
       status="ok",
@@ -261,6 +311,10 @@ async def Process_request_in_flaresolverr_format(
     typing.Dict[str, typing.Any],
     fastapi.Body(description="Custom parameters for user defined commands.")
   ] = None,
+  forks: typing_extensions.Annotated[
+    typing.List[DefferedForksModel],
+    fastapi.Body(description="Request processing forking model (usable for web sites with ustable challenge loading).")
+  ] = None,
 ):
   return await process_solve_request(
     url=url,
@@ -268,7 +322,8 @@ async def Process_request_in_flaresolverr_format(
     cookies=cookies,
     max_timeout=maxTimeout,
     proxy=proxy,
-    params=params
+    params=params,
+    forks=forks,
   )
 
 
@@ -294,6 +349,10 @@ async def Get_cookies_after_solve(
     typing.Union[str, ProxyModel],
     fastapi.Body(description=PROXY_ANNOTATION)
   ] = None,
+  forks: typing_extensions.Annotated[
+    typing.List[DefferedForksModel],
+    fastapi.Body(description="Request processing forking model (usable for web sites with ustable challenge loading).")
+  ] = None,
 ):
   return await process_solve_request(
     url=url,
@@ -301,7 +360,8 @@ async def Get_cookies_after_solve(
     cookies=cookies,
     max_timeout=maxTimeout,
     proxy=proxy,
-    params=None
+    params=None,
+    forks=forks,
   )
 
 
@@ -326,6 +386,10 @@ async def Get_cookies_and_page_content_after_solve(
     typing.Union[str, ProxyModel],
     fastapi.Body(description=PROXY_ANNOTATION)
   ] = None,
+  forks: typing_extensions.Annotated[
+    typing.List[DefferedForksModel],
+    fastapi.Body(description="Request processing forking model (usable for web sites with ustable challenge loading).")
+  ] = None,
 ):
   return await process_solve_request(
     url=url,
@@ -333,7 +397,8 @@ async def Get_cookies_and_page_content_after_solve(
     cookies=cookies,
     max_timeout=maxTimeout,
     proxy=proxy,
-    params=None
+    params=None,
+    forks=forks,
   )
 
 
@@ -362,6 +427,10 @@ async def Get_cookies_and_POST_request_result(
     typing.Union[str, ProxyModel],
     fastapi.Body(description=PROXY_ANNOTATION)
   ] = None,
+  forks: typing_extensions.Annotated[
+    typing.List[DefferedForksModel],
+    fastapi.Body(description="Request processing forking model (usable for web sites with ustable challenge loading).")
+  ] = None,
   # postDataContentType: typing_extensions.Annotated[
   #   str,
   #   fastapi.Body(description="Content-Type that will be sent.")
@@ -376,7 +445,8 @@ async def Get_cookies_and_POST_request_result(
     params={
       'postData': postData,
       # 'postDataContentType': postDataContentType,
-    }
+    },
+    forks=forks,
   )
 
 
@@ -408,6 +478,10 @@ async def Process_user_custom_command(
     typing.Dict,
     fastapi.Body(description="Params for execute custom user command.")
   ] = None,
+  forks: typing_extensions.Annotated[
+    typing.List[DefferedForksModel],
+    fastapi.Body(description="Request processing forking model (usable for web sites with ustable challenge loading).")
+  ] = None,
 ):
   return await process_solve_request(
     url=url,
@@ -415,7 +489,8 @@ async def Process_user_custom_command(
     cookies=cookies,
     max_timeout=maxTimeout,
     proxy=proxy,
-    params=params
+    params=params,
+    forks=forks
   )
 
 
@@ -456,6 +531,21 @@ def parse_entrypoint_command_processors(extension: str):
   return result_command_processors
 
 
+def parse_solve_forks(solve_forks: str):
+  res = []
+  forks_arr = solve_forks.strip(' "').split(',')
+  for fork_str in forks_arr:
+    single_fork_arr = fork_str.split(':')
+    if single_fork_arr:
+      res.append(
+        DefferedForksModel(
+          delay=float(single_fork_arr[0].strip()),
+          forks=(int(single_fork_arr[1].strip()) if len(single_fork_arr) > 1 else 1)
+        )
+      )
+  return res
+
+
 def init_args_parser():
   parser = argparse.ArgumentParser(
     description='Start flare_bypass server.',
@@ -484,6 +574,7 @@ def init_args_parser():
     help="""directory for save intermediate DOM dumps and screenshots on solving,
     for each request will be created unique directory"""
   )
+  parser.add_argument("--forks", type=str, default=None)
   parser.set_defaults(disable_gpu=False, debug=False)
   return parser
 
@@ -541,6 +632,10 @@ def server_run():
     global solver_args
 
     init_extensions(args)
+
+    global request_processing_default_args
+    if args.forks:
+      request_processing_default_args['forks'] = parse_solve_forks(args.forks)
 
     if args.debug_dir:
       logging.getLogger('flare_bypasser.flare_bypasser').setLevel(logging.DEBUG)

@@ -50,7 +50,7 @@ _CHALLENGE_SELECTORS = [
 
 _SHORT_TIMEOUT = 1
 _REDIRECT_WAIT_TIMEOUT = 5
-
+_DEBUG_SCREENSHOT_TIMEOUT = 3
 
 """
 Request for process, can be extended and some custom fields used in process_command.
@@ -207,22 +207,41 @@ class Solver(object):
       screenshot_file_without_ext = os.path.join(
         self._debug_dir, str(self._screenshot_i) + '_' + step_name)
 
+      screenshot_failed = False
       if image is not None:
         cv2.imwrite(screenshot_file_without_ext + ".jpg", image)
       else:
-        await self._driver.save_screenshot(screenshot_file_without_ext + ".jpg")
+        try:
+          await asyncio.wait_for(
+            self._driver.save_screenshot(screenshot_file_without_ext + ".jpg"),
+            _DEBUG_SCREENSHOT_TIMEOUT)
+        except asyncio.TimeoutError:
+          screenshot_failed = True
 
-      if mark_coords:
+      if not screenshot_failed and mark_coords:
         image = cv2.imread(screenshot_file_without_ext + ".jpg")
         image = cv2.circle(image, mark_coords, 5, (255, 0, 0), 2)
         cv2.imwrite(screenshot_file_without_ext + "_mark.jpg", image)
 
-      dom = await self._driver.get_dom()
-      with open(screenshot_file_without_ext + '.html', 'w') as fp:
-        fp.write(dom)
+      get_dom_failed : bool = False
+      try:
+        dom = await asyncio.wait_for(
+          self._driver.get_dom(),
+          _DEBUG_SCREENSHOT_TIMEOUT)
+      except asyncio.TimeoutError:
+        get_dom_failed = True
+
+      if not get_dom_failed:
+        with open(screenshot_file_without_ext + '.html', 'w') as fp:
+          fp.write(dom)
+
       self._screenshot_i += 1
 
-      logger.debug("Screenshot saved to '" + screenshot_file_without_ext + "'")
+      logger.debug(
+        "Screenshot saved to '" + screenshot_file_without_ext + "'" +
+        ('(screenshot failed)' if screenshot_failed else '') +
+        ('(dom getting failed)' if get_dom_failed else '')
+      )
 
   async def solve(self, req: Request) -> Response:
     # do some validations

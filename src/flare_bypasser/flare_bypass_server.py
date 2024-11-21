@@ -111,13 +111,52 @@ class HandleCommandResponse(pydantic.BaseModel):
   solution: typing.Optional[HandleCommandResponseSolution] = None
 
 
+async def wait_first_non_exception(tasks, return_condition = lambda x: True):
+  task_features = [asyncio.ensure_future(t()) for t in tasks]
+  to_cancel_tasks = []
+  skipped_results = []
+  exceptions = []
+  try:
+    while task_features :
+      finished, to_cancel_tasks = await asyncio.wait(task_features, return_when = asyncio.FIRST_COMPLETED)
+      for f in finished :
+        task_features.remove(f)
+      for f in finished :
+        try:
+          res = await f
+          if return_condition(res) :
+            return (res, skipped_results, exceptions)
+          else :
+            skipped_results.append(res)
+        except Exception as e:
+          exceptions.append(e)
+          if not task_features :
+            raise e
+  finally:
+    for t in to_cancel_tasks :
+      t.cancel()
+  return (None, skipped_results, exceptions)
+
+
+async def solve(
+  solve_request: flare_bypasser.Request,
+  proxy: str = None,
+  solver_args: dict = {}
+):
+  solver = flare_bypasser.Solver(
+    proxy=proxy,
+    **solver_args)
+  return await solver.solve(solve_request)
+
+
 async def process_solve_request(
   url: str,
   cmd: str,
   cookies: list[CookieModel] = None,
   max_timeout: int = None,  # in msec.
   proxy: typing.Union[str, ProxyModel] = None,
-  params: dict = {}
+  params: dict = {},
+  forks: int = 1  # < Number of forks for solve. Usable for sites with unstable loading.
 ):
   start_timestamp = datetime.datetime.timestamp(datetime.datetime.now())
 
@@ -155,10 +194,12 @@ async def process_solve_request(
       debug_dir = os.path.join(local_solver_args['debug_dir'], str(uuid.uuid4()))
       pathlib.Path(debug_dir).mkdir(parents=True, exist_ok=True)
       local_solver_args['debug_dir'] = debug_dir
-    solver = flare_bypasser.Solver(
-      proxy=proxy,
-      **local_solver_args)
-    solve_response = await solver.solve(solve_request)
+
+    solve_tasks = []
+    for i in range(forks):
+      solve_tasks.append([lambda: solve(solve_request, proxy = proxy, solver_args = local_solver_args)])
+
+    solve_response = wait_first_non_exception(solve_tasks)
 
     return HandleCommandResponse(
       status="ok",

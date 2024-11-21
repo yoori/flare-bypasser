@@ -100,7 +100,11 @@ class BrowserWrapper(object):
     return self._page
 
   async def get_outputs(self):
-    return await self._zendriver_driver.get_outputs()
+    try:
+      stdout_bytes, stderr_bytes = await self._zendriver_driver.communicate()
+      return [stdout_bytes, stderr_bytes]
+    except:
+      return None
 
   async def current_url(self):
     return self._page.url

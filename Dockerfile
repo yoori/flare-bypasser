@@ -113,6 +113,8 @@ WORKDIR /app
 
 RUN apt-get update && apt install -y python3-opencv
 
+RUN echo "Install python package for arch: $(arch)"
+
 COPY . flare_bypasser
 RUN pip install --prefer-binary flare_bypasser/
 

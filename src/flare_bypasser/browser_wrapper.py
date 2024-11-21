@@ -114,8 +114,11 @@ class BrowserWrapper(object):
       self._user_data_dir = None
 
   async def title(self):
-    res = await self._page.select("title")
-    return res.text
+    try:
+      res = await self._page.select("title", timeout=0)
+      return res.text
+    except asyncio.TimeoutError:
+      return None
 
   async def select_count(self, css_selector):
     try:

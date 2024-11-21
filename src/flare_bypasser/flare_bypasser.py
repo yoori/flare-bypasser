@@ -24,24 +24,19 @@ logger = logging.getLogger(__name__)
 USER_AGENT = None
 
 _ACCESS_DENIED_TITLES = [
-  # Cloudflare
   'Access denied',
-  # Cloudflare http://bitturk.net/ Firefox
-  'Attention Required! | Cloudflare'
+  'Attention Required! | Cloudflare'  # < https://prowlarr.servarr.com/v1/ping under socks5://91.142.74.232:40001
+]
+
+_CHALLENGE_TITLES = [
+  'Just a moment...',
+  'DDoS-Guard'
 ]
 
 _ACCESS_DENIED_SELECTORS = [
   # Cloudflare
   'div.cf-error-title span.cf-code-label span',
-  # Cloudflare http://bitturk.net/ Firefox
   '#cf-error-details div.cf-error-overview h1'
-]
-
-_CHALLENGE_TITLES = [
-  # Cloudflare
-  'Just a moment...',
-  # DDoS-GUARD
-  'DDoS-Guard'
 ]
 
 _CHALLENGE_SELECTORS = [
@@ -303,21 +298,35 @@ class Solver(object):
       logger.error(error_message)
       raise Solver.Exception(error_message)
 
-  async def _check_challenge(self):
-    driver = self._driver
-    page_title = await driver.title()
+  """
+  return:
+    True: if challenge detected
+    False: if not detected.
+    None: if page isn't loaded.
+  """
+  async def _check_challenge(self) -> typing.Optional[bool] :
+    page_title = await self._driver.title()
+
+    if page_title is None:  # < page isn't loaded or page don't have title element
+      if (await self._driver.select_count('html') > 0):
+        # Reask title (page loading can be finished between title getting and html checking)
+        page_title = await self._driver.title()
+        if page_title is None:
+          return False
 
     # find access denied titles
     for title in _ACCESS_DENIED_TITLES:
       if title == page_title:
         raise Exception(
-          'Cloudflare has blocked this request. '
-          'Probably your IP is banned for this site, check in your web browser.'
+          "Cloudflare has blocked this request. "
+          "Probably your IP is banned for this site, check in your web browser (title = '" +
+          str(title) +
+          "'"
         )
 
     # find access denied selectors
     for selector in _ACCESS_DENIED_SELECTORS:
-      if (await driver.select_count(selector) > 0):
+      if (await self._driver.select_count(selector) > 0):
         raise Exception(
           'Cloudflare has blocked this request. '
           'Probably your IP is banned for this site, check in your web browser.'
@@ -334,7 +343,7 @@ class Solver(object):
     if not challenge_found:
       # find challenge by selectors
       for selector in _CHALLENGE_SELECTORS:
-        if (await driver.select_count(selector)) > 0:
+        if (await self._driver.select_count(selector)) > 0:
           challenge_found = True
           logger.info("Challenge detected. Selector found: " + selector)
           break
@@ -350,33 +359,37 @@ class Solver(object):
 
       # check that challenge present (wait when it will disappear after click)
       challenge_found = await self._check_challenge()
-      if not challenge_found:
+
+      if challenge_found:
+        logger.info("To check checkbox presense")
+        # check that need to click,
+        # get screenshot of full page (all elements is in shadowroot)
+        # clicking can be required few times.
+        page_image = await self._driver.get_screenshot()
+        click_coord = Solver.get_flare_click_point(page_image)
+
+        if click_coord:
+          logger.info("Verify checkbot found, click coordinates: " + str(click_coord))
+          await self.save_screenshot('to_verify_click', image=page_image, mark_coords=click_coord)
+          # recheck that challenge present - we can be already redirected and
+          # need to exclude click on result page
+          challenge_found = await self._check_challenge()
+          if not challenge_found:
+            logger.info("Challenge disappeared on step #" + str(attempt))
+            break
+
+          logger.info("Click challenge by coords: " + str(click_coord[0]) + ", " + str(click_coord[1]))
+          await self._driver.click_coords(click_coord)
+          await asyncio.sleep(1)
+
+          await self.save_screenshot('after_verify_click')
+        else:
+          logger.info("Checkbox isn't found")
+      elif challenge_found is None:  # < Page isn't loaded.
+        logger.info("Page isn't loaded on step #" + str(attempt))
+      else:  # < Challenge isn't found.
         logger.info("Challenge disappeared on step #" + str(attempt))
         break
-
-      logger.info("To check checkbox presense")
-      # check that need to click,
-      # get screenshot of full page (all elements is in shadowroot)
-      # clicking can be required few times.
-      page_image = await self._driver.get_screenshot()
-      click_coord = Solver.get_flare_click_point(page_image)
-      if click_coord:
-        logger.info("Verify checkbot found, click coordinates: " + str(click_coord))
-        await self.save_screenshot('to_verify_click', image=page_image, mark_coords=click_coord)
-        # recheck that challenge present - we can be already redirected and
-        # need to exclude click on result page
-        challenge_found = await self._check_challenge()
-        if not challenge_found:
-          logger.info("Challenge disappeared on step #" + str(attempt))
-          break
-
-        logger.info("Click challenge by coords: " + str(click_coord[0]) + ", " + str(click_coord[1]))
-        await self._driver.click_coords(click_coord)
-        await asyncio.sleep(1)
-
-        await self.save_screenshot('after_verify_click')
-      else:
-        logger.info("Checkbox isn't found")
 
       attempt = attempt + 1
       await asyncio.sleep(_SHORT_TIMEOUT)

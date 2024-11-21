@@ -122,7 +122,7 @@ class BrowserWrapper(object):
 
   async def select_count(self, css_selector):
     try:
-      return len(await self._page.select(css_selector, timeout=0))  # Select without waiting.
+      return len(await self._page.select_all(css_selector, timeout=0))  # Select without waiting.
     except asyncio.TimeoutError:
       return 0
 

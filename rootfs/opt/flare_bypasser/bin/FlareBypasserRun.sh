@@ -149,9 +149,13 @@ if [ "$DEBUG" = true ] ; then
   ADD_PARAMS="$ADD_PARAMS --debug-dir=$WORKSPACE_ROOT/debug"
 fi
 
+if [ "$FORKS" != "" ] ; then
+  ADD_PARAMS="$ADD_PARAMS --forks="\""$FORKS"\"
+fi
+
 echo "Run server $(pip show flare-bypasser | grep Version | awk '{print $2}'
 ), chrome: $(/usr/bin/chrome --version
-), extensions: $EXTENSION_MODULES"
+), extensions: $EXTENSION_MODULES, add params: $ADD_PARAMS"
 
 flare_bypass_server -b 0.0.0.0:8080 $EXTENSION_MODULES_PARAM $ADD_PARAMS 2>&1 | \
   tee "$WORKSPACE_ROOT/log/flare_bypass_server.log"

@@ -130,23 +130,23 @@ async def wait_first_non_exception(tasks, return_condition = lambda x: True):
   skipped_results = []
   exceptions = []
   try:
-    while task_features :
+    while task_features:
       finished, to_cancel_tasks = await asyncio.wait(task_features, return_when = asyncio.FIRST_COMPLETED)
-      for f in finished :
+      for f in finished:
         task_features.remove(f)
-      for f in finished :
+      for f in finished:
         try:
           res = await f
-          if return_condition(res) :
+          if return_condition(res):
             return (res, skipped_results, exceptions)
-          else :
+          else:
             skipped_results.append(res)
         except Exception as e:
           exceptions.append(e)
-          if not task_features :
+          if not task_features:
             raise e
   finally:
-    for t in to_cancel_tasks :
+    for t in to_cancel_tasks:
       t.cancel()
   return (None, skipped_results, exceptions)
 

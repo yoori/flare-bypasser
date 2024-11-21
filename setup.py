@@ -1,12 +1,13 @@
-import pkg_resources
 import distutils.core
+
 
 def is_installed(pkgname):
   try:
-    import cv2
+    import cv2 # noqa
     return True
-  except:
+  except Exception:
     return False
+
 
 install_requires = [
   'asyncio',

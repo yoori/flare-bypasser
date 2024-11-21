@@ -103,7 +103,7 @@ class BrowserWrapper(object):
     try:
       stdout_bytes, stderr_bytes = await self._zendriver_driver.communicate()
       return [stdout_bytes, stderr_bytes]
-    except:
+    except Exception:
       return None
 
   async def current_url(self):

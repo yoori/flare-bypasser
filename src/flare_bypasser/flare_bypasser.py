@@ -226,7 +226,7 @@ class Solver(object):
         image = cv2.circle(image, mark_coords, 5, (255, 0, 0), 2)
         cv2.imwrite(screenshot_file_without_ext + "_mark.jpg", image)
 
-      get_dom_failed : bool = False
+      get_dom_failed: bool = False
       try:
         dom = await asyncio.wait_for(
           self._driver.get_dom(),
@@ -329,7 +329,7 @@ class Solver(object):
     False: if not detected.
     None: if page isn't loaded.
   """
-  async def _check_challenge(self) -> typing.Optional[bool] :
+  async def _check_challenge(self) -> typing.Optional[bool]:
     page_title = await self._driver.title()
 
     if page_title is None:  # < page isn't loaded or page don't have title element
@@ -391,7 +391,7 @@ class Solver(object):
         # get screenshot of full page (all elements is in shadowroot)
         # clicking can be required few times.
         page_image = await self._driver.get_screenshot()
-        click_coord = Solver.get_flare_click_point(page_image)
+        click_coord = Solver.get_flare_click_point(page_image, log_prefix=self._log_prefix)
 
         if click_coord:
           logger.info(self._log_prefix + "Verify checkbot found, click coordinates: " + str(click_coord))
@@ -580,7 +580,7 @@ class Solver(object):
     return rect_contours
 
   @staticmethod
-  def get_flare_click_point(image, logger = None, save_steps_dir: str = None):
+  def get_flare_click_point(image, logger = None, save_steps_dir: str = None, log_prefix = ''):
     rect_contours = Solver._get_flare_rect_contours(image, save_steps_dir=save_steps_dir)
 
     rect_contours = sorted(rect_contours, key=lambda c_pair: c_pair[0])
@@ -605,7 +605,7 @@ class Solver(object):
       cv2.imwrite(os.path.join(save_steps_dir, 'image_with_rect_contours.png'), debug_image)
 
     if logger:
-      logger.debug(self._log_prefix + "Found " + str(len(rect_contours)) + " contours")
+      logger.debug(log_prefix + "Found " + str(len(rect_contours)) + " contours")
 
     # Now we should find two rect contours (one inside other) with ratio 1-5%, (now I see: 0.0213).
     if len(rect_contours) > 1:
@@ -617,7 +617,7 @@ class Solver(object):
           area_ratio = area1 / area2
           if logger:
             logger.debug(
-              self._log_prefix +
+              log_prefix +
               "Areas ratio #" + str(area1_index) + "/#" + str(area2_index) + ": " +
               str(area_ratio)
             )

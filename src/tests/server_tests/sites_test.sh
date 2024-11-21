@@ -17,10 +17,18 @@ function site_test {
     >"$TMP_DIR/get_cookies.result" 2>"$TMP_DIR/get_cookies.err" && \
     cat "$TMP_DIR/get_cookies.result" | python3 -c '
 import sys, json
-res=json.load(sys.stdin)
-if "solution" not in res or res["solution"] is None or "cookies" not in res["solution"]:
+res = json.load(sys.stdin)
+solved = ("solution" in res and "cookies" in res["solution"])
+blocked = ("status" in res and res["status"] == "error" and "message" in res and "Cloudflare has blocked" in res["message"])
+if not solved and not blocked:
   sys.exit(1)
-' && echo "$URL: success" || ( echo "$URL: fail, response:" 1>&2 ; cat "$TMP_DIR/get_cookies.result" | sed -r 's/^/  /' >&2 ; exit 1 ; )
+elif solved:
+  print("solved")
+else:
+  print("blocked")
+' >"$TMP_DIR/get_cookies.check_result.out" && \
+    echo "$URL: success ($(cat "$TMP_DIR/get_cookies.check_result.out"))" || \
+    ( echo "$URL: fail, response:" 1>&2 ; cat "$TMP_DIR/get_cookies.result" | sed -r 's/^/  /' >&2 ; exit 1 ; )
   return $?
 }
 
@@ -30,5 +38,7 @@ site_test 'https://xcv.ashoo.org/' || export RES=1
 site_test 'https://myg.ashoo.live/' || export RES=1
 site_test 'https://hdf3im.lordfilm1.pics/' || export RES=1
 site_test 'https://www.ygg.re' 'socks5://91.142.74.232:40001' || export RES=1
+site_test 'https://ext.to/latest/' 'socks5://91.142.74.232:40001' || export RES=1
+site_test 'https://prowlarr.servarr.com/v1/ping' 'socks5://91.142.74.232:40001' || export RES=1 # Expected blocked here.
 
 exit $RES

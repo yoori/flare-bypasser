@@ -112,7 +112,13 @@ RUN echo '%sudo ALL=(ALL:ALL) NOPASSWD:ALL' >/etc/sudoers.d/nopasswd \
 
 WORKDIR /app
 
-RUN apt-get update && apt install -y python3-opencv
+# for armv7l install additional packages for build python modules (no binary distribution for some python packages).
+RUN apt-get update && apt install -y --no-install-recommends python3-opencv && ( \
+  BUILD_ARCH="$(arch)" ; \
+  if [ "$BUILD_ARCH" = "armv7l" ] ; then \
+    apt install -y --no-install-recommends cmake ; \
+  fi ; \
+  )
 
 RUN echo "Install python package for arch: $(arch)"
 

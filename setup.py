@@ -16,7 +16,7 @@ install_requires = [
   'numpy',
   'certifi==2024.8.30',
   'websockets==14.0',
-  'zendriver @ git+https://github.com/yoori/zendriver.git',
+  'zendriver_flare_bypasser',
   'argparse',
   'oslex',
   'jinja2',

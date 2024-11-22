@@ -8,7 +8,7 @@ import shutil
 
 import cv2
 
-import zendriver
+import zendriver_flare_bypasser as zendriver
 
 XVFB_DISPLAY = None
 

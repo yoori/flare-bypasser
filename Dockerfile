@@ -116,7 +116,7 @@ WORKDIR /app
 RUN apt-get update && apt install -y --no-install-recommends python3-opencv && ( \
   BUILD_ARCH="$(arch)" ; \
   if [ "$BUILD_ARCH" = "armv7l" ] ; then \
-    apt install -y --no-install-recommends cmake ; \
+    apt install -y --no-install-recommends cmake build-essential ; \
   fi ; \
   )
 

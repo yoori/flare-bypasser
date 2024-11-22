@@ -116,7 +116,7 @@ WORKDIR /app
 RUN apt-get update && apt install -y --no-install-recommends python3-opencv && ( \
   BUILD_ARCH="$(arch)" ; \
   if [ "$BUILD_ARCH" = "armv7l" ] ; then \
-    apt install -y --no-install-recommends cmake build-essential ; \
+    apt install -y --no-install-recommends cmake build-essential libssl-dev ; \
   fi ; \
   )
 
@@ -126,6 +126,14 @@ COPY . flare_bypasser
 RUN pip install --prefer-binary flare_bypasser/
 
 COPY rootfs /
+
+# Cleanup environment - decrease image size.
+RUN pip cache purge && apt clean && ( \
+  BUILD_ARCH="$(arch)" ; \
+  if [ "$BUILD_ARCH" = "armv7l" ] ; then \
+    apt autoremove -y cmake build-essential libssl-dev ; \
+  fi ; \
+  )
 
 USER ${UID}
 

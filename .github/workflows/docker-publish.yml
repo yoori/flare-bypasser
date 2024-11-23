@@ -24,14 +24,27 @@ env:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
+          - builder: ubuntu-latest
+            platform: linux/x86_64
           - builder: ubuntu-latest
             platform: linux/amd64
           - builder: ubuntu-latest
             platform: linux/arm64
           - builder: ubuntu-latest
+            platform: linux/aarch64
+          - builder: ubuntu-latest
             platform: linux/arm/v7
+          - builder: ubuntu-latest
+            platform: linux/arm/v8
+          #- builder: ubuntu-latest # No chrome
+          #  platform: linux/arm/v6
+          #- builder: ubuntu-latest # No gost, no chrome
+          #  platform: linux/s390x
+          #- builder: ubuntu-latest # No gost, custom chrome
+          #  platform: linux/ppc64le
 
     runs-on: ${{ matrix.builder }}
 
@@ -77,6 +90,14 @@ jobs:
         uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+            type=ref,enable=true,priority=600,prefix=,suffix=,event=tag
+            type=ref,enable=true,priority=600,prefix=,suffix=,event=branch
+          labels: |
+            org.opencontainers.image.title=flare-bypasser
+            org.opencontainers.image.description=Flare Bypass Server
+            org.opencontainers.image.vendor=yuri.kuznecov@gmail.com
 
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action

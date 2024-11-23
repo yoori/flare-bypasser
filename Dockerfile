@@ -72,7 +72,7 @@ ENV CHROME_DISABLE_GPU=${CHROME_DISABLE_GPU}
 ENV DEBUG=false
 ENV VERBOSE=false
 ENV FORKS=
-ENV PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/
+ENV PYTHONPATH=/usr/lib/python3/dist-packages/
 #< trick for use apt installed packages on package installation with using pip.
 
 # Copy dummy packages

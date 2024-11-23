@@ -72,6 +72,8 @@ ENV CHROME_DISABLE_GPU=${CHROME_DISABLE_GPU}
 ENV DEBUG=false
 ENV VERBOSE=false
 ENV FORKS=
+ENV PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/
+#< trick for use apt installed packages on package installation with using pip.
 
 # Copy dummy packages
 COPY --from=builder ${PACKAGES_DIR} ${PACKAGES_DIR}
@@ -113,27 +115,17 @@ RUN echo '%sudo ALL=(ALL:ALL) NOPASSWD:ALL' >/etc/sudoers.d/nopasswd \
 WORKDIR /app
 
 # for armv7l install additional packages for build python modules (no binary distribution for some python packages).
-RUN apt-get update && apt install -y --no-install-recommends python3-opencv && ( \
-  BUILD_ARCH="$(arch)" ; \
-  if [ "$BUILD_ARCH" = "armv7l" ] ; then \
-    apt install -y --no-install-recommends cmake build-essential libssl-dev ; \
-  fi ; \
-  )
+RUN apt-get update && apt install -y --no-install-recommends python3-opencv python3-numpy
 
 RUN echo "Install python package for arch: $(arch)"
 
 COPY . flare_bypasser
-RUN pip install --prefer-binary flare_bypasser/
+RUN ADDITIONAL_PYTHONPATH="$PYTHONPATH" pip install --prefer-binary flare_bypasser/
 
 COPY rootfs /
 
 # Cleanup environment - decrease image size.
-RUN pip cache purge && apt clean && ( \
-  BUILD_ARCH="$(arch)" ; \
-  if [ "$BUILD_ARCH" = "armv7l" ] ; then \
-    apt autoremove -y cmake build-essential libssl-dev ; \
-  fi ; \
-  )
+RUN pip cache purge && apt clean
 
 USER ${UID}
 

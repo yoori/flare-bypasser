@@ -167,6 +167,11 @@ jobs:
 
       - name: Inspect image
         run: |
-          docker buildx imagetools inspect '${{ env.REGISTRY }}/${{ steps.meta.outputs.tags }}'
+          set -e
+          set -o pipefail
+          echo "${{ steps.meta.outputs.tags }}" | sed -r 's/[ ]+/ /g' | tr ' ' '\n' | sed -r 's|^|${{ env.REGISTRY }}/|' | \
+            while read IMAGE_NAME ; do \
+              docker buildx imagetools inspect "$IMAGE_NAME" || exit 1 ; \
+            done
 
       # TODO: publish to docker.io

@@ -18,7 +18,7 @@ chrome_diagnostic() {
     return 1
   fi
 
-  /usr/bin/chrome '--remote-allow-origins=*' \
+  "$CHROME_BIN" '--remote-allow-origins=*' \
     --no-first-run \
     --no-service-autorun \
     --no-default-browser-check \
@@ -99,6 +99,12 @@ CURRENT_GID=$(id -g)
 export IN_DOCKER=true
 export WORKSPACE_ROOT=/opt/flare_bypasser/var/
 export PYTHONPATH=$PYTHONPATH:/opt/flare_bypasser/lib/:/opt/flare_bypasser/extensions/
+CHROME_BIN=$(which chrome || which chromium)
+
+if [ "$CHROME_BIN" = "" ] ; then
+  echo "Can't find chrome executable" >&2
+  exit 1
+fi
 
 sudo -n find "$WORKSPACE_ROOT" -exec chown "$CURRENT_UID:$CURRENT_GID" {} \;
 mkdir -p "$WORKSPACE_ROOT/log"

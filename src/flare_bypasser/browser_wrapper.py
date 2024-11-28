@@ -28,7 +28,8 @@ class BrowserWrapper(object):
     center = None
 
     def __init__(self, center):
-      self.center = tuple(center)
+      self.center = tuple(float(x) for x in center)
+      #< zendriver expect here only json serializable types
 
   class FakeNode(object):
     attributes = None

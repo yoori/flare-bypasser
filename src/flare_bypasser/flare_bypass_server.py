@@ -625,8 +625,8 @@ def server_run():
       sys.exit(1)
 
     if args.verbose:
-      logging.getLogger('nodriver.core.browser').setLevel(logging.DEBUG)
-      logging.getLogger('uc.connection').setLevel(logging.DEBUG)
+      logging.getLogger('zendriver_flare_bypasser.core.browser').setLevel(logging.DEBUG)
+      logging.getLogger('uc.connection').setLevel(logging.DEBUG) # enable DEBUG for zendriver/core/connection.py
       logging.getLogger('flare_bypasser.flare_bypasser').setLevel(logging.DEBUG)
 
     global solver_args

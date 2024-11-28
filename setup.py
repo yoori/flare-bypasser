@@ -24,7 +24,7 @@ install_requires = [
   'urllib3',
   'certifi==2024.8.30',
   'websockets==14.0',
-  'zendriver_flare_bypasser==0.2.0',  # 'zendriver @ git+https://github.com/yoori/zendriver.git@flare-bypasser'
+  'zendriver_flare_bypasser==0.2.1',
   'argparse',
   'oslex',
   'jinja2',

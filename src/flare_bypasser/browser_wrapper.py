@@ -97,7 +97,7 @@ class BrowserWrapper(object):
       shutil.rmtree(user_data_dir, ignore_errors=True)
 
   # Get original driver page impl - can be used only in user command specific implementations
-  def get_driver(self):
+  def get_driver(self) -> zendriver.Tab:
     return self._page
 
   async def get_outputs(self):

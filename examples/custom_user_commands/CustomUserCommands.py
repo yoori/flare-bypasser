@@ -1,3 +1,4 @@
+import zendriver_flare_bypasser as zendriver
 from flare_bypasser import BaseCommandProcessor, Request, Response, BrowserWrapper
 
 
@@ -7,13 +8,13 @@ class MyClickCommandProcessor(BaseCommandProcessor):
     return req
 
   async def process_command(self, res: Response, req: Request, driver: BrowserWrapper) -> Response:
-    nodriver_tab = driver.get_driver()
-    dom = await nodriver_tab.get_content()
-    els = await nodriver_tab.select_all('input[type=submit]')
+    nodriver_tab: zendriver_flare_bypasser.Tab = driver.get_driver()
+    dom = await nodriver_tab.get_content()  # get source code of page (actual DOM)
+    els = await nodriver_tab.select_all('input[type=submit]')  # find submit button
     if not els:
       raise Exception("MyClickCommandProcessor: no input for click: " + str(dom))
-    await els[0].click()
-    res.response = await nodriver_tab.get_content()
+    await els[0].click()  # click submit
+    res.response = await nodriver_tab.get_content() # get actual DOM after click and return it in response
     # Expect here "Bledny kod" text in DOM (appears only after click)
     return res
 

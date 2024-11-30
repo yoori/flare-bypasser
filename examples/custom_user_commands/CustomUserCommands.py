@@ -8,7 +8,7 @@ class MyClickCommandProcessor(BaseCommandProcessor):
     return req
 
   async def process_command(self, res: Response, req: Request, driver: BrowserWrapper) -> Response:
-    nodriver_tab: zendriver_flare_bypasser.Tab = driver.get_driver()
+    nodriver_tab: zendriver.Tab = driver.get_driver()
     dom = await nodriver_tab.get_content()  # get source code of page (actual DOM)
     els = await nodriver_tab.select_all('input[type=submit]')  # find submit button
     if not els:

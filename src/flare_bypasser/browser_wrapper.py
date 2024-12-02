@@ -185,28 +185,19 @@ class BrowserWrapper(object):
 
   async def set_cookies(self, cookies: list[dict]):
     # convert {"name": "...", "value": "...", ...} to array of http.cookiejar.Cookie
-    cookie_jar = http.cookiejar.CookieJar()
+    cookies = []
     for c in cookies:
-      # TO CHECK, that all fields filled correctly.
-      cookie_jar.set_cookie(http.cookiejar.Cookie(
-        None,  # version
-        c.get('name', None),
-        c.get('value', None),
-        c.get('port', 443),
-        None,  # port_specified
-        c.get('domain', None),
-        None,  # domain_specified
-        None,  # domain_initial_dot
-        c.get('path', '/'),
-        None,  # path_specified
-        c.get('secure', False),
-        c.get('expires', None),  # < here expected float seconds since epoch time.
-        None,  # discard
-        None,  # comment
-        None,  # comment_url
-        None   # rest
-      ))
-    await self._zendriver_driver.cookies.set_all(cookie_jar)
+      add_cookie = zendriver.network.CookieParam()
+      add_cookie.name = c.get('name', None)
+      add_cookie.value = c.get('value', None)
+      add_cookie.port = c.get('port', 443)
+      add_cookie.domain = c.get('domain', None)
+      add_cookie.path = c.get('path', None)
+      add_cookie.secure = c.get('secure', False)
+      add_cookie.expires = c.get('expires', None)
+      add_cookie.same_site = c.get('same_site', None)
+      cookies.append(add_cookie)
+    await self._zendriver_driver.cookies.set_all(cookies)
 
   async def get_cookies(self) -> list[dict]:
     # return list of dict have format: {"name": "...", "value": "..."}

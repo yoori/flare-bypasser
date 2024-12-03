@@ -1,6 +1,7 @@
 import typing
 import copy
 import json
+import re
 import httpx
 
 
@@ -15,9 +16,9 @@ class AsyncClient(object):
   _solver_url = None
   _http_client: httpx.AsyncClient = None
   _user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
-  _max_tries = 2
   # < base user-agent that will be used before first challenge solve,
   # after it will be replaced with solver actual user-agent
+  _max_tries = 2
 
   class Exception(Exception):
     pass
@@ -51,15 +52,32 @@ class AsyncClient(object):
     if not self._http_client:
       self._http_client = httpx.AsyncClient(http2 = True)
 
-    for try_i in range(2):
+    for try_i in range(self._max_tries):
       # request web page
       send_headers = copy.copy(headers)
       send_headers['user-agent'] = self._user_agent
+      send_headers['cache-control'] = 'no-cache'  # < Disable cache, because httpx can return cached captcha response.
       response = await run_method(self._http_client, url, headers = send_headers, **kwargs)
 
-      if response.status_code == 403:
+      if response.status_code == 403 and response.text:
         # check that it is cloud flare block
-        if response.text and "Just a moment..." in response.text:
+        if (
+            (
+              "Just a moment..." in response.text and
+              re.search(r'<\s*title\s*>[^><]*Just a moment\.\.\.[^><]*<\s*/\s*title\s*>', response.text)
+            ) or
+            (
+              "Attention Required!" in response.text and
+              re.search(r'<\s*title\s*>[^><]*Attention Required\s*![^><]*<\s*/\s*title\s*>', response.text)
+            ) or
+            (
+              "Captcha Challenge" in response.text and
+              re.search(r'<\s*title\s*>[^><]*Captcha Challenge[^><]*<\s*/\s*title\s*>', response.text)
+            ) or
+            (
+              "DDoS-Guard" in response.text and
+              re.search(r'<\s*title\s*>[^><]*DDoS-Guard[^><]*<\s*/\s*title\s*>', response.text)
+            )):
           await self._solve_challenge(url if not solve_url else solve_url)
         else:
           # Return site original 403(non cloud flare blocking) as is - application should process it.
@@ -75,7 +93,7 @@ class AsyncClient(object):
     async with httpx.AsyncClient(http2 = False) as solver_client:
       solve_send_cookies = []
       if self._http_client:
-        for c in self._http_client.cookies:
+        for c in self._http_client.cookies.jar:
           # c is http.cookiejar.Cookie
           solve_send_cookies.append({
             "name": c.name,

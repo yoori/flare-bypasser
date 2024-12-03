@@ -3,7 +3,6 @@ import sys
 import typing
 import asyncio
 import uuid
-import http.cookiejar
 import shutil
 
 import cv2
@@ -29,7 +28,7 @@ class BrowserWrapper(object):
 
     def __init__(self, center):
       self.center = tuple(float(x) for x in center)
-      #< zendriver expect here only json serializable types
+      # < zendriver expect here only json serializable types
 
   class FakeNode(object):
     attributes = None

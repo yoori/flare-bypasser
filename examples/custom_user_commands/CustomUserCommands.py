@@ -14,7 +14,7 @@ class MyClickCommandProcessor(BaseCommandProcessor):
     if not els:
       raise Exception("MyClickCommandProcessor: no input for click: " + str(dom))
     await els[0].click()  # click submit
-    res.response = await nodriver_tab.get_content() # get actual DOM after click and return it in response
+    res.response = await nodriver_tab.get_content()  # get actual DOM after click and return it in response
     # Expect here "Bledny kod" text in DOM (appears only after click)
     return res
 

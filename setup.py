@@ -25,6 +25,7 @@ install_requires = [
   'certifi==2024.8.30',
   'websockets==14.0',
   'zendriver_flare_bypasser==0.2.1',
+  'httpx',
   'argparse',
   'oslex',
   'jinja2',

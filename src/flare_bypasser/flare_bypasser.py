@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 USER_AGENT = None
 
 _ACCESS_DENIED_TITLES = [
+  'IP banned',
   'Access denied',
   'Attention Required! | Cloudflare'  # < https://prowlarr.servarr.com/v1/ping under socks5://91.142.74.232:40001
 ]
@@ -292,19 +293,19 @@ class Solver(object):
           if self._driver is not None:
             await self._driver.close()
             logger.debug(self._log_prefix + 'A used instance of webdriver has been destroyed')
-          if logger.isEnabledFor(logging.DEBUG):
-            # Read outputs only after driver close (when process stopped),
-            # otherwise output reading can be blocked.
-            outputs = await self._driver.get_outputs()
-            if outputs:
-              for output_i, output in enumerate(outputs):
-                logger.debug(
-                  self._log_prefix +
-                  "Webdriver output #" + str(output_i) + ":" +
-                  "\n---------------------------------------\n" +
-                  str(output.decode("utf-8")) +
-                  "\n---------------------------------------\n"
-                )
+            if logger.isEnabledFor(logging.DEBUG):
+              # Read outputs only after driver close (when process stopped),
+              # otherwise output reading can be blocked.
+              outputs = await self._driver.get_outputs()
+              if outputs:
+                for output_i, output in enumerate(outputs):
+                  logger.debug(
+                    self._log_prefix +
+                    "Webdriver output #" + str(output_i) + ":" +
+                    "\n---------------------------------------\n" +
+                    str(output.decode("utf-8")) +
+                    "\n---------------------------------------\n"
+                  )
           self._driver = None
     except Solver.Exception as e:
       error_message = (
@@ -344,7 +345,7 @@ class Solver(object):
       if title == page_title:
         raise Exception(
           "Cloudflare has blocked this request. "
-          "Probably your IP is banned for this site, check in your web browser (title = '" +
+          "Probably your IP is banned for this site, check in your web browser, title = '" +
           str(title) +
           "'"
         )

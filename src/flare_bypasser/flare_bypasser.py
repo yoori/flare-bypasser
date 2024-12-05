@@ -24,9 +24,9 @@ logger = logging.getLogger(__name__)
 USER_AGENT = None
 
 _ACCESS_DENIED_TITLES = [
-  'IP banned',
-  'Access denied',
-  'Attention Required! | Cloudflare'  # < https://prowlarr.servarr.com/v1/ping under socks5://91.142.74.232:40001
+  'ip banned',
+  'access denied',
+  'attention required'  # < https://prowlarr.servarr.com/v1/ping under socks5://91.142.74.232:40001
 ]
 
 _CHALLENGE_TITLES = [
@@ -206,6 +206,14 @@ class Solver(object):
     self._disable_gpu = disable_gpu
     self._log_prefix = log_prefix
 
+  @staticmethod
+  def title_is_denied_title(page_title):
+    page_title = page_title.lower()
+    for title in _ACCESS_DENIED_TITLES:
+      if page_title.startswith(title):
+        return True
+    return False
+
   async def save_screenshot(self, step_name, image=None, mark_coords=None):
     if self._debug_dir:
       screenshot_file_without_ext = os.path.join(
@@ -294,6 +302,7 @@ class Solver(object):
             await self._driver.close()
             logger.debug(self._log_prefix + 'A used instance of webdriver has been destroyed')
             if logger.isEnabledFor(logging.DEBUG):
+              logger.debug(self._log_prefix + 'Check outputs')
               # Read outputs only after driver close (when process stopped),
               # otherwise output reading can be blocked.
               outputs = await self._driver.get_outputs()
@@ -306,6 +315,7 @@ class Solver(object):
                     str(output.decode("utf-8")) +
                     "\n---------------------------------------\n"
                   )
+
           self._driver = None
     except Solver.Exception as e:
       error_message = (
@@ -331,24 +341,28 @@ class Solver(object):
     None: if page isn't loaded.
   """
   async def _check_challenge(self) -> typing.Optional[bool]:
-    page_title = await self._driver.title()
+    page_title, page_loaded = await self._driver.title()
 
-    if page_title is None:  # < page isn't loaded or page don't have title element
+    if not page_loaded:
+      return None
+
+    if page_title is None:  # < page isn't loaded(js fill, ...) or page don't have title element
       if (await self._driver.select_count('html') > 0):
         # Reask title (page loading can be finished between title getting and html checking)
-        page_title = await self._driver.title()
+        page_title, page_loaded = await self._driver.title()
         if page_title is None:
           return False
 
+    page_title = page_title.lower()
+
     # find access denied titles
-    for title in _ACCESS_DENIED_TITLES:
-      if title == page_title:
-        raise Exception(
-          "Cloudflare has blocked this request. "
-          "Probably your IP is banned for this site, check in your web browser, title = '" +
-          str(title) +
-          "'"
-        )
+    if Solver.title_is_denied_title(page_title):
+      raise Exception(
+        "Cloudflare has blocked this request. "
+        "Probably your IP is banned for this site, check in your web browser, title = '" +
+        str(page_title) +
+        "'"
+      )
 
     # find access denied selectors
     for selector in _ACCESS_DENIED_SELECTORS:

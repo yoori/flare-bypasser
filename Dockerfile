@@ -97,6 +97,8 @@ RUN dpkg -i ${PACKAGES_DIR}/*.deb \
     $(apt-cache depends chromium | grep Depends | sed "s/.*ends:\ //" | grep -v -E '^<.*>$' | tr '\n' ' ') \
   && apt-get install -y --no-install-recommends \
     xvfb dumb-init procps curl vim xauth sudo git \
+    # required for get fresh root CA
+    ca-certificates \
   # Remove temporary files and hardware decoding libraries
   && rm -rf /var/lib/apt/lists/* \
   && find /usr/lib/ -type f -name 'libmfxhw*' -delete \
@@ -112,12 +114,15 @@ RUN echo '%sudo ALL=(ALL:ALL) NOPASSWD:ALL' >/etc/sudoers.d/nopasswd \
   && mkdir -p /opt/flare_bypasser/var/ \
   && chown -R ${UNAME} /opt/flare_bypasser/var/
 
-WORKDIR /app
+# Update root CA for chrome sites certificates validation
+RUN update-ca-certificates
 
 # for armv7l install additional packages for build python modules (no binary distribution for some python packages).
 RUN apt-get update && apt install -y --no-install-recommends python3-opencv python3-numpy
 
 RUN echo "Install python package for arch: $(arch)"
+
+WORKDIR /app
 
 COPY . flare_bypasser
 RUN ADDITIONAL_PYTHONPATH="$PYTHONPATH" pip install --prefer-binary flare_bypasser/

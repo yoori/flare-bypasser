@@ -256,14 +256,25 @@ class Solver(object):
         ('(dom getting failed)' if get_dom_failed else '')
       )
 
-  async def solve(self, req: Request) -> Response:
+  async def solve(self, req: Request, fill_user_agent=True) -> Response:
     # do some validations
     if req.url is None:
       raise Exception("Parameter 'url' should be defined.")
 
     try:
       logger.info(self._log_prefix + "Solve request: " + str(req))
-      res = await asyncio.wait_for(self._resolve_challenge(req), req.max_timeout)
+      if fill_user_agent:
+        res, user_agent = await asyncio.wait_for(
+          asyncio.gather(
+            self._resolve_challenge(req),
+            self.get_user_agent()
+          ),
+          req.max_timeout)
+        res.user_agent = user_agent
+      else:
+        res = await asyncio.wait_for(
+          self._resolve_challenge(req),
+          req.max_timeout)
       logger.info(self._log_prefix + "Solve result: " + str(res))
     except asyncio.TimeoutError:
       raise Exception("Processing timeout (max_timeout=" + str(req.max_timeout) + ")")
@@ -289,7 +300,8 @@ class Solver(object):
         try:
           step = 'browser init'
           self._driver: BrowserWrapper = await BrowserWrapper.create(
-            use_proxy, disable_gpu = self._disable_gpu
+            proxy = use_proxy,
+            disable_gpu = self._disable_gpu
           )
           logger.info(
             self._log_prefix +
@@ -500,15 +512,14 @@ class Solver(object):
         logger.info(self._log_prefix + "Challenge solving finished")
         await self.save_screenshot('solving_finish')
 
-      step = 'get cookies'
-      res.url = await self._driver.current_url()
-      res.cookies = await self._driver.get_cookies()
-      logger.info(self._log_prefix + "Cookies got")
-      global USER_AGENT
-      if USER_AGENT is None:
-        step = 'get user-agent'
-        USER_AGENT = await self._driver.get_user_agent()
-      res.user_agent = USER_AGENT
+      # After solve, don't execute js ! Only extension can (it know page properties),
+      # some pages can have problems with js evaluation (blocked js loop, ...)
+      # Ask required page traits in parallel
+      step = 'get url,cookies,user-agent'
+      await asyncio.gather(
+        self._fill_response_current_url(res),
+        self._fill_response_cookies(res),
+        return_exceptions=True)
 
       step = 'command processing'
       res = await command_processor.process_command(res, req, self._driver)
@@ -519,6 +530,31 @@ class Solver(object):
       return res
     except Exception as e:
       raise Solver.Exception(str(e), step=step)
+
+  async def _fill_response_current_url(self, response: Response):
+    response.url = await self._driver.current_url()
+
+  async def _fill_response_cookies(self, response: Response):
+    response.cookies = await self._driver.get_cookies()
+
+  # We use separate driver instance for fill user-agent !
+  # For fill user-agent we need to execute js,
+  # requested page can have bad implementation and can blocks js execution (inf loop, ...)
+  async def get_user_agent(self):
+    global USER_AGENT
+    if USER_AGENT is None:
+      log_prefix = 'Fork for get user-agent: '
+      try:
+        # Create instance without proxy
+        driver: BrowserWrapper = await BrowserWrapper.create(
+          disable_gpu = self._disable_gpu)
+        await driver.get('about:blank')
+        USER_AGENT = await driver.get_user_agent()
+      finally:
+        logger.info(log_prefix + 'Close user-agent webdriver')
+        if driver is not None:
+          await driver.close()
+    return USER_AGENT
 
   @staticmethod
   def _get_dominant_color(image):

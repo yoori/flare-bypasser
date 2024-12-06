@@ -239,7 +239,8 @@ async def process_solve_request(
             lambda fork_i = cur_fork_i: deffered_call(
               lambda: solve(
                 solve_request, proxy = proxy, solver_args = local_solver_args,
-                log_prefix=("fork #" + str(fork_i) + ", ")
+                log_prefix=("fork #" + str(fork_i) + ", "),
+                fill_user_agent=False  # < Request user agent in separate task
               ),
               forks_model.delay
             )
@@ -247,9 +248,16 @@ async def process_solve_request(
           cur_fork_i += 1
 
     logger.info('Start solve_tasks = ' + str(solve_tasks))
-    solve_response, _skipped_results, _exceptions = await wait_first_non_exception(solve_tasks)
+    (solve_response, _skipped_results, _exceptions), user_agent = await asyncio.gather(
+      wait_first_non_exception(solve_tasks),
+      flare_bypasser.Solver(
+        log_prefix="fork user-agent",
+        **local_solver_args,
+      ).get_user_agent()
+    )
     # < solve_response can't be None if no return_condition passed to wait_first_non_exception,
     # only exception expected
+    solve_response.user_agent = user_agent
 
     return HandleCommandResponse(
       status="ok",

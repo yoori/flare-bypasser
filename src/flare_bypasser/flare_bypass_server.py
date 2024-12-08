@@ -157,6 +157,24 @@ async def deffered_call(task, timeout: float):
   return await task()
 
 
+async def get_user_agent(
+  solver_args: dict = {},
+  max_timeout: int = None  # < timeout in msec
+) -> str:
+  try:
+    try:
+      return await asyncio.wait_for(
+        flare_bypasser.Solver(
+          log_prefix="fork user-agent",
+          **solver_args,
+        ).get_user_agent(),
+        max_timeout / 1000
+      )
+    except asyncio.TimeoutError:
+      raise Exception("Processing timeout (max_timeout=" + str(max_timeout) + ")")
+  except Exception as e:
+    raise Exception("On user-agent getting: " + str(e)) from e
+
 async def solve(
   solve_request: flare_bypasser.Request,
   proxy: str = None,
@@ -253,10 +271,7 @@ async def process_solve_request(
     logger.info('Start solve_tasks = ' + str(solve_tasks))
     (solve_response, _skipped_results, _exceptions), user_agent = await asyncio.gather(
       wait_first_non_exception(solve_tasks),
-      flare_bypasser.Solver(
-        log_prefix="fork user-agent",
-        **local_solver_args,
-      ).get_user_agent()
+      get_user_agent(solver_args = local_solver_args, max_timeout = max_timeout)
     )
     # < solve_response can't be None if no return_condition passed to wait_first_non_exception,
     # only exception expected

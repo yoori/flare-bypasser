@@ -326,13 +326,13 @@ class BrowserWrapper(object):
       if self._enable_lost_cdp_workaround:
         # for understand why we pass lambda to _deffered_call, see _deffered_call description
         res = await BrowserWrapper._wait_first([
-          BrowserWrapper._coro_by_fun(task_fun, *args, fork_i = 0, call_name = call_name, **kwargs),
+          BrowserWrapper._call_zendriver_async(task_fun, *args, fork_i = 0, call_name = call_name, **kwargs),
           BrowserWrapper._deffered_call(
-            lambda: BrowserWrapper._coro_by_fun(task_fun, *args, fork_i = 1, call_name = call_name, **kwargs),
+            lambda: BrowserWrapper._call_zendriver_async(task_fun, *args, fork_i = 1, call_name = call_name, **kwargs),
             timeout_step
           ),
           BrowserWrapper._deffered_call(
-            lambda: BrowserWrapper._coro_by_fun(task_fun, *args, fork_i = 2, call_name = call_name, **kwargs),
+            lambda: BrowserWrapper._call_zendriver_async(task_fun, *args, fork_i = 2, call_name = call_name, **kwargs),
             2 * timeout_step
           )
         ])
@@ -349,19 +349,31 @@ class BrowserWrapper(object):
     return res
 
   @staticmethod
-  async def _coro_by_fun(fun, *args, fork_i = 0, call_name = None, **kwargs):
+  async def _call_zendriver_async(
+    fun: typing.Callable[typing.Any, typing.Awaitable], *args, fork_i = 0, call_name = None,
+    **kwargs
+  ):
     try:
       logger.debug(
         "call '" + (call_name if call_name else BrowserWrapper._parse_call(fun)) +
         "': fork #" + str(fork_i) + " started"
       )
-      res = await fun(*args, **kwargs)
+      max_tries = 5
+      for i in range(max_tries):
+        try:
+          return await fun(*args, **kwargs)
+        except TypeError as e:
+          if "target must be set to" in str(e) and i != max_tries - 1:
+            # handle exceptions like: TypeError: target must be set to a 'TargetInfo' but got 'NoneType
+            # it can appears in zendriver.connection.update_target on all operations,
+            # (as result of runtime DOM changes or on page loading)
+            continue
+          raise
     finally:
       logger.debug(
         "call '" + (call_name if call_name else BrowserWrapper._parse_call(fun)) +
         "': fork #" + str(fork_i) + " finished"
       )
-    return res
 
   @staticmethod
   def _parse_call(task):
@@ -379,7 +391,7 @@ class BrowserWrapper(object):
   # avoid "coroutine ... was never awaited" warning
   # (we create coro only before it await)
   @staticmethod
-  async def _deffered_call(task, timeout: float):
+  async def _deffered_call(task: typing.Callable[typing.Any, typing.Awaitable], timeout: float):
     if timeout > 0:
       await asyncio.sleep(timeout)
     task_coro = task()

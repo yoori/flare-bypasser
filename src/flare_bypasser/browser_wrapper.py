@@ -6,7 +6,6 @@ import uuid
 import shutil
 import logging
 import time
-import copy
 
 import cv2
 

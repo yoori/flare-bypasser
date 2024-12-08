@@ -545,6 +545,7 @@ class Solver(object):
     if USER_AGENT is None:
       log_prefix = 'Fork for get user-agent: '
       logger.debug(log_prefix + 'Start user-agent webdriver')
+      driver = None
       try:
         # Create instance without proxy
         driver: BrowserWrapper = await BrowserWrapper.create(

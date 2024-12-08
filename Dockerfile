@@ -94,7 +94,8 @@ RUN dpkg -i ${PACKAGES_DIR}/*.deb \
   # Install dependencies
   && apt-get update \
   && apt-get install -y --no-install-recommends \
-    $(apt-cache depends chromium | grep Depends | sed "s/.*ends:\ //" | grep -v -E '^<.*>$' | tr '\n' ' ') \
+    $(apt-cache depends chromium chromium-common | grep Depends | sed "s/.*ends:\ //" | \
+      grep -v -E '^<.*>$' | grep -v -E '^chromium-' | sort -u | tr '\n' ' ') \
   && apt-get install -y --no-install-recommends \
     xvfb dumb-init procps curl vim xauth sudo git \
     # required for get fresh root CA

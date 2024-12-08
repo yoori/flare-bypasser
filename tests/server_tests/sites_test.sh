@@ -58,5 +58,6 @@ site_test 'https://1337x.unblockninja.com/cat/Movies/time/desc/1/' 'socks5://91.
 site_test 'https://solscan.io/' || export RES=1
 site_test 'https://www.ygg.re/engine/search?do=search&order=desc&sort=publish_date&category=al' || export RES=1
 site_test 'https://1337x.torrentbay.st/cat/Movies/time/desc/1/' || export RES=1
+site_test 'http://www.google.nl/' || export RES=1
 
 exit $RES

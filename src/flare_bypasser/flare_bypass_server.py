@@ -175,6 +175,7 @@ async def get_user_agent(
   except Exception as e:
     raise Exception("On user-agent getting: " + str(e)) from e
 
+
 async def solve(
   solve_request: flare_bypasser.Request,
   proxy: str = None,

@@ -169,7 +169,10 @@ async def solve(
     proxy=proxy,
     log_prefix=log_prefix,
     **solver_args)
-  return await solver.solve(solve_request)
+  return await solver.solve(
+    solve_request,
+    fill_user_agent=False,  # < user_agent will be filled in separate fork
+  )
 
 
 async def process_solve_request(

@@ -109,10 +109,11 @@ class BrowserWrapper(object):
     # Disable certificates checking
     browser_args += ["--ignore-certificate-errors", "--ignore-urlfetcher-cert-requests"]
     try:
-      zendriver_driver = await zendriver.start(
+      config = zendriver.Config(
         sandbox=False,
         browser_args=browser_args
       )
+      zendriver_driver = await zendriver.Browser.create(config)
       return BrowserWrapper(zendriver_driver, user_data_dir = user_data_dir)
     finally:
       shutil.rmtree(user_data_dir, ignore_errors=True)
@@ -159,8 +160,12 @@ class BrowserWrapper(object):
         self._title_call_timeout  # < title can hangs on page loading (no CDP response), repeat title call in bypasser
       )
       return (res.text, True)
+    except zendriver.core.connection.ProtocolException as e:
+      if "could not find node with given id" in str(e).lower():
+        # DOM tree changed in runtime
+        return (None, True)
     except asyncio.TimeoutError as e:
-      if "time ran out while waiting for " in str(e):
+      if "time ran out while waiting for " in str(e).lower():
         # < zendriver timeout on element waiting
         return (None, True)
       # external timeout: page isn't loaded
@@ -176,6 +181,11 @@ class BrowserWrapper(object):
         call_name="select_count(" + str(css_selector) + "):select_all"
       ))
       # < Select without waiting.
+    except zendriver.core.connection.ProtocolException as e:
+      if "could not find node with given id" in str(e).lower():
+        # DOM tree changed in runtime
+        return 0
+      raise e from e
     except asyncio.TimeoutError:
       return 0
 
@@ -233,7 +243,7 @@ class BrowserWrapper(object):
           return cv2.imread(tmp_file_path)
         except zendriver.core.connection.ProtocolException as e:
           if "not finished loading yet" not in str(e):
-            raise copy.copy(e) from e
+            raise e from e
         await asyncio.sleep(1)
     finally:
       if tmp_file_path is not None and os.path.exists(tmp_file_path):

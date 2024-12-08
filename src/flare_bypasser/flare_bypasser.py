@@ -106,7 +106,7 @@ Standard commands implementations.
 
 
 class GetCookiesCommandProcessor(BaseCommandProcessor):
-  pass  # Use all default process implementations.
+  pass
 
 
 class GetPageCommandProcessor(BaseCommandProcessor):
@@ -544,6 +544,7 @@ class Solver(object):
     global USER_AGENT
     if USER_AGENT is None:
       log_prefix = 'Fork for get user-agent: '
+      logger.debug(log_prefix + 'Start user-agent webdriver')
       try:
         # Create instance without proxy
         driver: BrowserWrapper = await BrowserWrapper.create(
@@ -551,7 +552,7 @@ class Solver(object):
         await driver.get('about:blank')
         USER_AGENT = await driver.get_user_agent()
       finally:
-        logger.info(log_prefix + 'Close user-agent webdriver')
+        logger.debug(log_prefix + 'Close user-agent webdriver')
         if driver is not None:
           await driver.close()
     return USER_AGENT

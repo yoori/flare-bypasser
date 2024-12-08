@@ -24,8 +24,10 @@ res = json.load(sys.stdin)
 solved = ("solution" in res and "cookies" in res["solution"])
 blocked = ("status" in res and res["status"] == "error" and "message" in res and "Cloudflare has blocked" in res["message"])
 cf_clearance_present = False
+cookies_count = 0
 if solved:
   cookies = res["solution"]["cookies"]
+  cookies_count = len(cookies)
   for c in cookies:
     if c["name"] == "cf_clearance":
       cf_clearance_present = True
@@ -34,7 +36,7 @@ if solved:
 if not solved and not blocked:
   sys.exit(1)
 elif solved:
-  print("solved: cf_clearance " + ("present" if cf_clearance_present else "not present"))
+  print("solved: cf_clearance " + ("present" if cf_clearance_present else ("not present, " + str(cookies_count) + " cookies")))
 else:
   print("blocked")
 ' >"$TMP_DIR/get_cookies.check_result.out" && \

@@ -1,3 +1,4 @@
+MODE=${1:-get_cookies}
 SERVER_URL=${SERVER_URL:-http://localhost:20080}
 
 set -o pipefail
@@ -15,7 +16,7 @@ function site_test {
   if [ "$PROXY" != "" ] ; then
     PROXY_PART=',"proxy": "'"$PROXY"'"'
   fi
-  curl -s -XPOST "$SERVER_URL"'/get_cookies' -H 'Content-Type: application/json' \
+  curl -s -XPOST "$SERVER_URL"'/'"$MODE" -H 'Content-Type: application/json' \
     --data-raw '{"maxTimeout": 60000, "url": "'"$URL"'"'"$PROXY_PART"'}' \
     >"$TMP_DIR/get_cookies.result" 2>"$TMP_DIR/get_cookies.err" && \
     cat "$TMP_DIR/get_cookies.result" | python3 -c '
@@ -59,5 +60,6 @@ site_test 'https://solscan.io/' || export RES=1
 site_test 'https://www.ygg.re/engine/search?do=search&order=desc&sort=publish_date&category=al' || export RES=1
 site_test 'https://1337x.torrentbay.st/cat/Movies/time/desc/1/' || export RES=1
 site_test 'http://www.google.nl/' || export RES=1
+site_test 'https://www.topps.com/' || export RES=1
 
 exit $RES

@@ -108,12 +108,14 @@ RUN dpkg -i ${PACKAGES_DIR}/*.deb \
 
 RUN mkdir -p "/app/.config/chromium/Crash Reports/pending"
 
-RUN echo '%sudo ALL=(ALL:ALL) NOPASSWD:ALL' >/etc/sudoers.d/nopasswd \
+RUN if [ "$UID" -ne 0 ] ; then \
+  echo '%sudo ALL=(ALL:ALL) NOPASSWD:ALL' >/etc/sudoers.d/nopasswd \
   && adduser --disabled-password --gecos '' --uid "${UID}" --gid "${GID}" --shell /bin/bash ${UNAME} \
   && adduser ${UNAME} sudo \
   && chown -R ${UNAME} /app/ \
   && mkdir -p /opt/flare_bypasser/var/ \
-  && chown -R ${UNAME} /opt/flare_bypasser/var/
+  && chown -R ${UNAME} /opt/flare_bypasser/var/ ; \
+  fi
 
 # Update root CA for chrome sites certificates validation
 RUN update-ca-certificates

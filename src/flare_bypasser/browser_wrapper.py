@@ -30,7 +30,7 @@ class BrowserWrapper(object):
   _page: zendriver.Tab = None
   _debug_execution_time: bool
   _enable_lost_cdp_workaround: bool
-  _title_call_timeout: float = 2  # < 2 seconds
+  _select_call_timeout: float = 2  # < 2 seconds
 
   class FakePosition(object):
     center = None
@@ -156,7 +156,7 @@ class BrowserWrapper(object):
           timeout=0,
           call_name='title:select'
         ),
-        self._title_call_timeout  # < title can hangs on page loading (no CDP response), repeat title call in bypasser
+        self._select_call_timeout  # < title can hangs on page loading (no CDP response), repeat title call in bypasser
       )
       return (res.text, True)
     except zendriver.core.connection.ProtocolException as e:
@@ -172,13 +172,18 @@ class BrowserWrapper(object):
 
   async def select_count(self, css_selector):
     try:
-      return len(await self._reliable_call_driver(
-        zendriver.Tab.select_all,  # < self._page.select_all(css_selector, timeout=0)
-        self._page,
-        css_selector,
-        timeout=0,
-        call_name="select_count(" + str(css_selector) + "):select_all"
-      ))
+      return len(
+        await asyncio.wait_for(
+          self._reliable_call_driver(
+            zendriver.Tab.select_all,  # < self._page.select_all(css_selector, timeout=0)
+            self._page,
+            css_selector,
+            timeout=0,
+            call_name="select_count(" + str(css_selector) + "):select_all"
+          ),
+          self._select_call_timeout  # < select can hangs on page loading (no CDP response), repeat select call in bypasser
+        )
+      )
       # < Select without waiting.
     except zendriver.core.connection.ProtocolException as e:
       if "could not find node with given id" in str(e).lower():

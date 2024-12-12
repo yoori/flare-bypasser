@@ -10,6 +10,10 @@ function site_test {
   URL="$1"
   PROXY="$2"
   PROXY_PART=''
+  if [ "$PROXY" != "" ]
+  then
+    PRINT_PROXY=" ($PROXY)"
+  fi
   RED='\033[0;31m'
   GREEN='\033[0;32m'
   NO_COLOR='\033[0m'
@@ -41,8 +45,8 @@ elif solved:
 else:
   print("blocked")
 ' >"$TMP_DIR/get_cookies.check_result.out" && \
-    echo -e "$URL: ${GREEN}success${NO_COLOR} ($(cat "$TMP_DIR/get_cookies.check_result.out"))" || \
-    ( echo -e "$URL: ${RED}fail${NO_COLOR}, response:" 1>&2 ; cat "$TMP_DIR/get_cookies.result" | sed -r 's/^/  /' >&2 ; echo >&2 ; exit 1 ; )
+    echo -e "$URL$PRINT_PROXY: ${GREEN}success${NO_COLOR} ($(cat "$TMP_DIR/get_cookies.check_result.out"))" || \
+    ( echo -e "$URL$PRINT_PROXY: ${RED}fail${NO_COLOR}, response:" 1>&2 ; cat "$TMP_DIR/get_cookies.result" | sed -r 's/^/  /' >&2 ; echo >&2 ; exit 1 ; )
   return $?
 }
 
@@ -58,8 +62,10 @@ site_test 'https://extratorrent.st' 'socks5://91.142.74.232:40001' || export RES
 site_test 'https://1337x.unblockninja.com/cat/Movies/time/desc/1/' 'socks5://91.142.74.232:40001' || export RES=1
 site_test 'https://solscan.io/' || export RES=1
 site_test 'https://www.ygg.re/engine/search?do=search&order=desc&sort=publish_date&category=al' || export RES=1
-site_test 'https://1337x.torrentbay.st/cat/Movies/time/desc/1/' || export RES=1
+site_test 'https://1337x.torrentbay.st/cat/Movies/time/desc/1/' 'socks5://91.142.74.232:40001' || export RES=1
 site_test 'http://www.google.nl/' || export RES=1
 site_test 'https://www.topps.com/' || export RES=1
+site_test 'http://www.comando.la/' 'socks5://91.142.74.232:40001' || export RES=1
+site_test 'http://bludv.xyz/' 'socks5://91.142.74.232:40001' || export RES=1
 
 exit $RES

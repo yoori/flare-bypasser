@@ -359,11 +359,13 @@ class Solver(object):
       return None
 
     if page_title is None:  # < page isn't loaded(js fill, ...) or page don't have title element
-      if (await self._driver.select_count('html') > 0):
-        # Reask title (page loading can be finished between title getting and html checking)
-        page_title, page_loaded = await self._driver.title()
-        if page_title is None:
-          return False
+      if (await self._driver.select_count('html') == 0):
+        return False
+
+      # Reask title (page loading can be finished between title getting and html checking)
+      page_title, page_loaded = await self._driver.title()
+      if page_title is None:
+        return False
 
     page_title = page_title.lower()
 

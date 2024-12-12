@@ -235,10 +235,16 @@ async def process_solve_request(
 
     global solver_args
     local_solver_args = copy.copy(solver_args)
+
     if local_solver_args['debug_dir']:
       debug_dir = os.path.join(local_solver_args['debug_dir'], str(uuid.uuid4()))
       pathlib.Path(debug_dir).mkdir(parents=True, exist_ok=True)
       local_solver_args['debug_dir'] = debug_dir
+
+    if local_solver_args['challenge_screenshots_dir']:
+      debug_dir = os.path.join(local_solver_args['challenge_screenshots_dir'], str(uuid.uuid4()))
+      pathlib.Path(debug_dir).mkdir(parents=True, exist_ok=True)
+      local_solver_args['challenge_screenshots_dir'] = debug_dir
 
     cur_fork_i = 0
     solve_tasks = []
@@ -601,6 +607,10 @@ def init_args_parser():
     help="""directory for save intermediate DOM dumps and screenshots on solving,
     for each request will be created unique directory"""
   )
+  parser.add_argument(
+    "--challenge-screenshots-dir", type=str, default=None,
+    help="""directory for save challenge screenshots, that used for detect challenge"""
+  )
   parser.add_argument("--forks", type=str, default=None)
   parser.set_defaults(disable_gpu=False, debug=False)
   return parser
@@ -668,6 +678,7 @@ def server_run():
     if args.debug_dir:
       logging.getLogger('flare_bypasser.flare_bypasser').setLevel(logging.DEBUG)
     solver_args['debug_dir'] = args.debug_dir
+    solver_args['challenge_screenshots_dir'] = args.challenge_screenshots_dir
 
     sys.argv = [re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])]
     sys.argv += unknown_args

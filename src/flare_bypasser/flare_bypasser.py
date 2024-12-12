@@ -173,6 +173,7 @@ class Solver(object):
   _screenshot_i: int = 0
   _debug_dir: str = None
   _log_prefix: str = ''
+  _challenge_screenshots_dir: str = None
 
   class Exception(Exception):
     step = None
@@ -186,12 +187,14 @@ class Solver(object):
     proxy_controller = None,
     disable_gpu = False,
     debug_dir: str = None,
+    challenge_screenshots_dir: str = None,
     log_prefix: str = '',
   ):
     self._proxy = proxy
     self._driver = None
     self._proxy_controller = proxy_controller
     self._debug_dir = debug_dir
+    self._challenge_screenshots_dir = challenge_screenshots_dir
     self._command_processors = dict(command_processors) if command_processors else {}
     # init standard commands
     get_cookies_command_processor = GetCookiesCommandProcessor()
@@ -420,6 +423,10 @@ class Solver(object):
         # get screenshot of full page (all elements is in shadowroot)
         # clicking can be required few times.
         page_image = await self._driver.get_screenshot()
+        if self._challenge_screenshots_dir:
+          save_path = os.path.join(self._challenge_screenshots_dir, "attempt_" + str(attempt) + ".jpg")
+          cv2.imwrite(save_path, page_image)
+          logger.info(self._log_prefix + "Challenge screenshot saved to '" + save_path + "'")
         click_coord = Solver.get_flare_click_point(page_image, log_prefix=self._log_prefix)
 
         if click_coord:

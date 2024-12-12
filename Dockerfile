@@ -71,6 +71,7 @@ ENV CHECK_SYSTEM=${CHECK_SYSTEM}
 ENV CHROME_DISABLE_GPU=${CHROME_DISABLE_GPU}
 ENV DEBUG=false
 ENV VERBOSE=false
+ENV SAVE_CHALLENGE_SCREENSHOTS=false
 ENV FORKS=
 ENV PYTHONPATH=/usr/lib/python3/dist-packages/
 #< trick for use apt installed packages on package installation with using pip.

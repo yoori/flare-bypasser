@@ -155,6 +155,11 @@ if [ "$DEBUG" = true ] ; then
   ADD_PARAMS="$ADD_PARAMS --debug-dir=$WORKSPACE_ROOT/debug"
 fi
 
+if [ "$SAVE_CHALLENGE_SCREENSHOTS" = true ] ; then
+  mkdir -p "$WORKSPACE_ROOT/challenge_screenshots"
+  ADD_PARAMS="$ADD_PARAMS --challenge-screenshots-dir=$WORKSPACE_ROOT/challenge_screenshots"
+fi
+
 if [ "$FORKS" != "" ] ; then
   ADD_PARAMS="$ADD_PARAMS --forks="\""$FORKS"\"
 fi

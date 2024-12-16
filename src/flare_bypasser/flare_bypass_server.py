@@ -109,7 +109,7 @@ class DefferedForksModel(pydantic.BaseModel):
 
 
 class HandleCommandResponseSolution(pydantic.BaseModel):
-  status: str
+  status: int
   url: str
   cookies: list[CookieModel] = pydantic.Field(default=[], description='Cookies got after solving')
   userAgent: typing.Optional[str] = None
@@ -290,7 +290,7 @@ async def process_solve_request(
       startTimestamp=start_timestamp,
       endTimestamp=datetime.datetime.timestamp(datetime.datetime.now()),
       solution=HandleCommandResponseSolution(
-        status="ok",
+        status=200,
         url=solve_response.url,
         cookies=[  # Convert cookiejar.Cookie to CookieModel
           CookieModel(**cookie) for cookie in solve_response.cookies

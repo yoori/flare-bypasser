@@ -176,6 +176,14 @@ jobs:
           echo "${{ steps.meta.outputs.tags }}" | sed -r 's/[ ]+/ /g' | tr ' ' '\n' | sed -r 's|^|${{ env.REGISTRY }}/|' | \
             head -n1 >/tmp/image_to_test_run
 
+      - name: Upload image to test
+        uses: actions/upload-artifact@v4
+        with:
+          name: image_to_test_run
+          path: /tmp/image_to_test_run
+          if-no-files-found: error
+          retention-days: 1
+
       # TODO: publish to docker.io
 
   image-test-run:
@@ -202,6 +210,12 @@ jobs:
     runs-on: ${{ matrix.builder }}
 
     steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/
+          pattern: image_to_test_run
+
       - name: Inspect image
         run: |
           set -e

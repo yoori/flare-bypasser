@@ -67,11 +67,11 @@ install_gost() {
 
     # Download the binary
     echo "Downloading gost version $version... (by $download_url)"
-    curl -fsSL -o gost.tar.gz "$download_url"
+    curl -fsSL -o gost.tar.gz "$download_url" || ( echo "gost download by $download_url failed" >&2 ; exit 1 ; )
 
     # Extract and install the binary
     echo "Installing gost..."
-    tar -xzf gost.tar.gz
+    tar -xzf gost.tar.gz || ( echo "gost unarchive failed by $download_url" >&2 ; exit 1 ; )
     chmod +x gost
     mv gost /usr/local/bin/gost || ( echo "gost not found after install" >&2 ; exit 1 ; )
 

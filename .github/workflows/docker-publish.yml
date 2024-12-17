@@ -210,5 +210,5 @@ jobs:
               docker container run -d -p 20080:8080 "$IMAGE_NAME" || exit 1 ; \
               # Test image on current platform
               # Stop docker image
-              docker rm $(docker stop $(docker ps -a -q --filter ancestor="IMAGE_NAME" --format="{{.ID}}")) ; \
+              docker rm $(docker stop $(docker ps -a -q --filter ancestor="$IMAGE_NAME" --format="{{.ID}}")) ; \
             done

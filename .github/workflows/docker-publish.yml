@@ -175,3 +175,40 @@ jobs:
             done
 
       # TODO: publish to docker.io
+
+  image-test-run:
+    needs:
+      - merge
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - builder: ubuntu-latest
+            platform: linux/x86_64
+          - builder: ubuntu-latest
+            platform: linux/amd64
+          - builder: ubuntu-latest
+            platform: linux/arm64
+          - builder: ubuntu-latest
+            platform: linux/aarch64
+          - builder: ubuntu-latest
+            platform: linux/arm/v7
+          - builder: ubuntu-latest
+            platform: linux/arm/v8
+
+    runs-on: ${{ matrix.builder }}
+
+    steps:
+      - name: Inspect image
+        run: |
+          set -e
+          set -o pipefail
+          echo "${{ steps.meta.outputs.tags }}" | sed -r 's/[ ]+/ /g' | tr ' ' '\n' | sed -r 's|^|${{ env.REGISTRY }}/|' | \
+            while read IMAGE_NAME ; do \
+              # Start docker image on platform
+              docker container run -d -p 20080:8080 "$IMAGE_NAME" || exit 1 ; \
+              # Test image on current platform
+              # Stop docker image
+              docker rm $(docker stop $(docker ps -a -q --filter ancestor="IMAGE_NAME" --format="{{.ID}}")) ; \
+            done

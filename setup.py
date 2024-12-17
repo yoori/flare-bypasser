@@ -24,7 +24,7 @@ install_requires = [
   'urllib3',
   'websockets==14.0',
   # 'websockets @ git+https://github.com/yoori/websockets.git@main',
-  'zendriver_flare_bypasser==0.2.6',
+  'zendriver_flare_bypasser==0.2.7',
   # 'zendriver_flare_bypasser @ git+https://github.com/yoori/zendriver.git@debug4',
   # 'zendriver_flare_bypasser @ git+https://github.com/yoori/zendriver.git@flare-bypasser',
   'httpx',

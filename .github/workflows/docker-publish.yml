@@ -173,6 +173,8 @@ jobs:
             while read IMAGE_NAME ; do \
               docker buildx imagetools inspect "$IMAGE_NAME" || exit 1 ; \
             done
+          echo "${{ steps.meta.outputs.tags }}" | sed -r 's/[ ]+/ /g' | tr ' ' '\n' | sed -r 's|^|${{ env.REGISTRY }}/|' | \
+            head -n1 >/tmp/image_to_test_run
 
       # TODO: publish to docker.io
 
@@ -204,13 +206,10 @@ jobs:
         run: |
           set -e
           set -o pipefail
-          echo "${{ steps.meta.outputs.tags }}" | sed -r 's/[ ]+/ /g' | tr ' ' '\n' | sed -r 's|^|${{ env.REGISTRY }}/|' | \
-            while read IMAGE_NAME ; do \
-              # Start docker image on platform
-              echo "To test image: $IMAGE_NAME" ; \
-              docker container run -d -p 20080:8080 "$IMAGE_NAME" || exit 1 ; \
-              # Test image on current platform
-              bash ./tests/server_tests/sites_test.sh ; \
-              # Stop docker image
-              docker rm $(docker stop $(docker ps -a -q --filter ancestor="$IMAGE_NAME" --format="{{.ID}}")) ; \
-            done
+          echo "IMAGE_NAME_TO_TEST=$(cat /tmp/image_to_test_run)" >> $GITHUB_ENV
+          echo "To test image: $IMAGE_NAME_TO_TEST"
+          docker container run -d -p 20080:8080 "$IMAGE_NAME_TO_TEST"
+          # Test image on current platform
+          bash ./tests/server_tests/sites_test.sh
+          # Stop docker image
+          docker rm $(docker stop $(docker ps -a -q --filter ancestor="$IMAGE_NAME_TO_TEST" --format="{{.ID}}"))

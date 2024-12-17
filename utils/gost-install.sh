@@ -79,6 +79,12 @@ install_gost() {
 }
 
 # Retrieve available versions from GitHub API
+curl -s "$base_url" >/tmp/gost-versions.out 2>/tmp/gost-versions.err || (
+  echo "can't get available gost versions:" >&2 ;
+  cat /tmp/gost-versions.err >&2 ;
+  exit 1 ;
+)
+
 versions=$(curl -s "$base_url" 2>/dev/null | grep -oP 'tag_name": "\K[^"]+')
 
 if [[ "$versions" == "" ]]; then

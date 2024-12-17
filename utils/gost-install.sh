@@ -58,7 +58,7 @@ install_gost() {
         cpu_arch="mipsle"
         ;;
     *)
-        echo "Unsupported CPU architecture."
+        echo "Unsupported CPU architecture." >&2
         exit 1
         ;;
     esac
@@ -79,7 +79,12 @@ install_gost() {
 }
 
 # Retrieve available versions from GitHub API
-versions=$(curl -s "$base_url" | grep -oP 'tag_name": "\K[^"]+')
+versions=$(curl -s "$base_url" 2>/dev/null | grep -oP 'tag_name": "\K[^"]+')
+
+if [[ "$versions" == "" ]]; then
+  echo "Can't get versions by url: $base_url" >&2
+  exit 1
+fi
 
 # Check if --install option provided
 if [[ "$1" == "--install" ]]; then

@@ -213,8 +213,8 @@ jobs:
       - name: Download digests
         uses: actions/download-artifact@v4
         with:
+          name: image_to_test_run
           path: /tmp/
-          pattern: image_to_test_run
 
       - name: Inspect image
         run: |

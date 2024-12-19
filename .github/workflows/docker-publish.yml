@@ -175,6 +175,8 @@ jobs:
             done
           echo "${{ steps.meta.outputs.tags }}" | sed -r 's/[ ]+/ /g' | tr ' ' '\n' | sed -r 's|^|${{ env.REGISTRY }}/|' | \
             head -n1 >/tmp/image_to_test_run
+          echo "===== /tmp/image_to_test_run ====="
+          cat /tmp/image_to_test_run
 
       - name: Upload image to test
         uses: actions/upload-artifact@v4
@@ -216,7 +218,7 @@ jobs:
           name: image_to_test_run
           path: /tmp/
 
-      - name: Inspect image
+      - name: Test image
         run: |
           set -e
           set -o pipefail

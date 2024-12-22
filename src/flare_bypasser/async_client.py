@@ -15,6 +15,8 @@ transparent cloud flare protection bypassing.
 class AsyncClient(object):
   _solver_url = None
   _http_client: httpx.AsyncClient = None
+  _args = []
+  _kwargs = {}
   _user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
   # < base user-agent that will be used before first challenge solve,
   # after it will be replaced with solver actual user-agent
@@ -23,11 +25,17 @@ class AsyncClient(object):
   class Exception(Exception):
     pass
 
-  def __init__(self, solver_url):
+  class CloudFlareBlocked(Exception):
+    pass
+
+  def __init__(self, solver_url, *args, **kwargs):
     self._solver_url = solver_url
+    self._args = args
+    self._kwargs = kwargs
 
   async def __aenter__(self):
-    self._http_client = httpx.AsyncClient(http2 = True)  # < Cleanup previously opened connections
+    self._http_client = None  # < Cleanup previously opened connections
+    self._init_client()
     await self._http_client.__aenter__()
     return self
 
@@ -42,48 +50,68 @@ class AsyncClient(object):
   def http_client(self) -> httpx.AsyncClient:
     return self._http_client
 
-  async def get(self, url, **kwargs) -> httpx.Response:
-    return await self._request(httpx.AsyncClient.get, url, **kwargs)
+  async def get(self, url, *args, **kwargs) -> httpx.Response:
+    return await self._request(httpx.AsyncClient.get, url, *args, **kwargs)
 
-  async def post(self, url, solve_url = None, **kwargs) -> httpx.Response:
-    return await self._request(httpx.AsyncClient.post, url, solve_url = solve_url, **kwargs)
+  async def post(self, url, *args, solve_url = None, **kwargs) -> httpx.Response:
+    return await self._request(httpx.AsyncClient.post, url, *args, solve_url = solve_url, **kwargs)
 
-  async def _request(self, run_method, url, solve_url = None, headers = {}, **kwargs) -> httpx.Response:
+  def _init_client(self):
     if not self._http_client:
-      self._http_client = httpx.AsyncClient(http2 = True)
+      self._http_client = httpx.AsyncClient(http2 = True, *self._args, **self._kwargs)
+
+  async def _request(self, run_method, url, *args, solve_url = None, headers = {}, **kwargs) -> httpx.Response:
+    self._init_client()
 
     for try_i in range(self._max_tries):
       # request web page
       send_headers = copy.copy(headers)
       send_headers['user-agent'] = self._user_agent
       send_headers['cache-control'] = 'no-cache'  # < Disable cache, because httpx can return cached captcha response.
-      response = await run_method(self._http_client, url, headers = send_headers, **kwargs)
+      response = await run_method(self._http_client, url, *args, headers = send_headers, **kwargs)
 
-      if response.status_code == 403 and response.text:
+      if (
+        response.status_code == 403 and
+        response.headers.get('content-type', '').startswith('text/html') and
+        response.text
+      ):
+        response_text = response.text.lower()
+
+        # check that it is cloud flare unsolvable block
+        if (
+          (
+            "access denied" in response_text and
+            re.search(r'<\s*title\s*>\s*access denied\s[^><]*cloudflare[^><]*<\s*/\s*title\s*>', response_text)
+          ) or
+          (
+            "ip banned" in response_text and "cloudflare" in response_text and
+            re.search(r'<\s*title\s*>\s*ip banned[^><]*<\s*/\s*title\s*>', response_text)
+          )
+        ):
+          raise AsyncClient.CloudFlareBlocked("IP blocked by cloud flare")
+
         # check that it is cloud flare block
         if (
             (
-              "Just a moment..." in response.text and
-              re.search(r'<\s*title\s*>[^><]*Just a moment\.\.\.[^><]*<\s*/\s*title\s*>', response.text)
+              "just a moment..." in response_text and
+              re.search(r'<\s*title\s*>[^><]*just a moment\.\.\.[^><]*<\s*/\s*title\s*>', response_text)
             ) or
             (
-              "Attention Required!" in response.text and
-              re.search(r'<\s*title\s*>[^><]*Attention Required\s*![^><]*<\s*/\s*title\s*>', response.text)
+              "attention required!" in response_text and
+              re.search(r'<\s*title\s*>[^><]*attention required\s*![^><]*<\s*/\s*title\s*>', response_text)
             ) or
             (
-              "Captcha Challenge" in response.text and
-              re.search(r'<\s*title\s*>[^><]*Captcha Challenge[^><]*<\s*/\s*title\s*>', response.text)
+              "captcha challenge" in response_text and
+              re.search(r'<\s*title\s*>[^><]*captcha challenge[^><]*<\s*/\s*title\s*>', response_text)
             ) or
             (
-              "DDoS-Guard" in response.text and
-              re.search(r'<\s*title\s*>[^><]*DDoS-Guard[^><]*<\s*/\s*title\s*>', response.text)
+              "ddos-guard" in response_text and
+              re.search(r'<\s*title\s*>[^><]*ddos-guard[^><]*<\s*/\s*title\s*>', response_text)
             )):
           await self._solve_challenge(url if not solve_url else solve_url)
-        else:
-          # Return site original 403(non cloud flare blocking) as is - application should process it.
-          return response
-      else:
-        return response
+          continue  # < Repeat request with cf cookies
+
+      return response
 
     raise AsyncClient.Exception(
       "Can't solve challenge: challenge got " + str(self._max_tries) + " times ... (max tries exceded)"
@@ -115,6 +143,7 @@ class AsyncClient(object):
           "cookies": solve_send_cookies,
           # < use for solve original client cookies,
           # it can contains some required information other that cloud flare marker.
+          "proxy": self._kwargs.get('proxy', None),
         },
         timeout=61.0
       )

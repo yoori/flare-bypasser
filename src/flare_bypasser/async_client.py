@@ -132,19 +132,20 @@ class AsyncClient(object):
             "secure": c.secure,
             "expires": c.expires
           })
+      solver_request = {
+        "maxTimeout": 60000,
+        "url": url,
+        "cookies": solve_send_cookies,
+        # < use for solve original client cookies,
+        # it can contains some required information other that cloud flare marker.
+        "proxy": self._kwargs.get('proxy', None),
+      }
       solver_response = await solver_client.post(
         self._solver_url + '/get_cookies',
         headers={
           'Content-Type': 'application/json'
         },
-        json={
-          "maxTimeout": 60000,
-          "url": url,
-          "cookies": solve_send_cookies,
-          # < use for solve original client cookies,
-          # it can contains some required information other that cloud flare marker.
-          "proxy": self._kwargs.get('proxy', None),
-        },
+        json=solver_request,
         timeout=61.0
       )
       if solver_response.status_code != 200:
@@ -153,8 +154,9 @@ class AsyncClient(object):
       response_json = solver_response.json()
       if "solution" not in response_json:
         raise AsyncClient.Exception(
-          "Can't solve challenge: no solution in response for '" + str(url) + "':" +
-          json.dumps(response_json)
+          "Can't solve challenge: no solution in response for '" + str(url) + "': " +
+          "response: " + json.dumps(response_json) +
+          " on request: " + json.dumps(solver_request)
         )
 
       response_solution_json = response_json["solution"]

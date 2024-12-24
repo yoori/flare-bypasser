@@ -114,8 +114,9 @@ class BrowserWrapper(object):
       )
       zendriver_driver = await zendriver.Browser.create(config)
       return BrowserWrapper(zendriver_driver, user_data_dir = user_data_dir)
-    finally:
+    except:
       shutil.rmtree(user_data_dir, ignore_errors=True)
+      raise
 
   # Get original driver page impl - can be used only in user command specific implementations
   def get_driver(self) -> zendriver.Tab:

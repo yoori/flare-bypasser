@@ -163,6 +163,8 @@ async def get_user_agent(
 ) -> str:
   try:
     try:
+      return ""
+      """
       return await asyncio.wait_for(
         flare_bypasser.Solver(
           log_prefix="fork user-agent",
@@ -170,6 +172,7 @@ async def get_user_agent(
         ).get_user_agent(),
         max_timeout / 1000
       )
+      """
     except asyncio.TimeoutError:
       raise Exception("Processing timeout (max_timeout=" + str(max_timeout) + ")")
   except Exception as e:

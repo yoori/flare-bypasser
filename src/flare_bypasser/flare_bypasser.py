@@ -34,21 +34,6 @@ _CHALLENGE_TITLES = [
   'DDoS-Guard'
 ]
 
-_ACCESS_DENIED_SELECTORS = [
-  # Cloudflare
-  'div.cf-error-title span.cf-code-label span',
-  '#cf-error-details div.cf-error-overview h1'
-]
-
-_CHALLENGE_SELECTORS = [
-  # Cloudflare
-  '#cf-challenge-running', '.ray_id', '.attack-box', '#cf-please-wait', '#challenge-spinner', '#trk_jschal_js',
-  # Custom CloudFlare for EbookParadijs, Film-Paleis, MuziekFabriek and Puur-Hollands
-  'td.info #js_info',
-  # Fairlane / pararius.com
-  'div.vc div.text-box h2'
-]
-
 _SHORT_TIMEOUT = 1
 _REDIRECT_WAIT_TIMEOUT = 5
 _DEBUG_SCREENSHOT_TIMEOUT = 3
@@ -361,15 +346,18 @@ class Solver(object):
     if not page_loaded:
       return None
 
+    print("XXX _check_challenge STEP1", flush=True)
     if page_title is None:  # < page isn't loaded(js fill, ...) or page don't have title element
       if (await self._driver.select_count('html') == 0):
         return False
 
       # Reask title (page loading can be finished between title getting and html checking)
       page_title, page_loaded = await self._driver.title()
+      print("XXX TITLE: " + str(page_title), flush=True)
       if page_title is None:
         return False
 
+    print("XXX _check_challenge STEP2", flush=True)
     page_title = page_title.lower()
 
     # find access denied titles
@@ -381,14 +369,7 @@ class Solver(object):
         "'"
       )
 
-    # find access denied selectors
-    for selector in _ACCESS_DENIED_SELECTORS:
-      if (await self._driver.select_count(selector) > 0):
-        raise Exception(
-          'Cloudflare has blocked this request. '
-          'Probably your IP is banned for this site, check in your web browser.'
-        )
-
+    print("XXX _check_challenge STEP4: TITLE: '" + page_title.lower() + "'", flush=True)
     # find challenge by title
     challenge_found = False
     for title in _CHALLENGE_TITLES:
@@ -397,14 +378,7 @@ class Solver(object):
         logger.info(self._log_prefix + "Challenge detected. Title found: " + page_title)
         break
 
-    if not challenge_found:
-      # find challenge by selectors
-      for selector in _CHALLENGE_SELECTORS:
-        if (await self._driver.select_count(selector)) > 0:
-          challenge_found = True
-          logger.info(self._log_prefix + "Challenge detected. Selector found: " + selector)
-          break
-
+    print("XXX _check_challenge STEP5", flush=True)
     return challenge_found
 
   async def _challenge_wait_and_click_loop(self):
@@ -443,7 +417,20 @@ class Solver(object):
             self._log_prefix +
             "Click challenge by coords: " + str(click_coord[0]) + ", " + str(click_coord[1])
           )
-          await self._driver.click_coords(click_coord)
+
+          button = None
+          page = self._driver.get_driver()
+          eles = page.eles("tag:input")
+          for ele in eles:
+            if "name" in ele.attrs.keys() and "type" in ele.attrs.keys():
+              if "turnstile" in ele.attrs["name"] and ele.attrs["type"] == "hidden":
+                button = ele.parent().shadow_root.child()("tag:body").shadow_root("tag:input")
+                break
+
+          print("XXXX button: " + ("found" if button is not None else "not found"))
+          if button is not None:
+            button.click()
+          #await self._driver.click_coords(click_coord)
           await asyncio.sleep(1)
 
           await self.save_screenshot('after_verify_click')
@@ -502,11 +489,14 @@ class Solver(object):
         await self._driver.get(preprocessed_req.url)
 
       step = 'check challenge'
+      print("XXX STEP1", flush=True)
       # find challenge by title
       challenge_found = await self._check_challenge()
 
+      print("XXX STEP1.1", flush=True)
       await self.save_screenshot('after_challenge_check')
 
+      print("XXX STEP2", flush=True)
       if not challenge_found:
         await self.save_screenshot('no_challenge_found')
         logger.info(self._log_prefix + "Challenge not detected!")
@@ -521,6 +511,7 @@ class Solver(object):
         logger.info(self._log_prefix + "Challenge solving finished")
         await self.save_screenshot('solving_finish')
 
+      print("XXX STEP3", flush=True)
       # After solve, don't execute js ! Only extension can (it know page properties),
       # some pages can have problems with js evaluation (blocked js loop, ...)
       # Ask required page traits in parallel

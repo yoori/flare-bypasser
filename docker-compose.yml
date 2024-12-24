@@ -12,8 +12,8 @@ services:
     environment:
       UNUSED: "false"
       # FORKS: "5:3" #< Uncomment if you work with sites with ustable challenge loading (start additional 3 forks after 5 seconds).
-      # DEBUG: "true"
-      # VERBOSE: "true"
+      DEBUG: "true"
+      VERBOSE: "true"
       SAVE_CHALLENGE_SCREENSHOTS: "true"
     container_name: flare-bypasser
     image: flare-bypasser:latest

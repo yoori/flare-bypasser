@@ -6,23 +6,9 @@ ARG CHROME_VERSION=""
 
 WORKDIR /app/
 
-ENV PACKAGES_DIR=/packages
-
-# Build dummy packages to skip installing them and their dependencies
-RUN mkdir -p "${PACKAGES_DIR}" \
-  && apt-get update \
-  && apt-get install -y --no-install-recommends equivs \
-  && equivs-control libgl1-mesa-dri \
-  && printf 'Section: misc\nPriority: optional\nStandards-Version: 3.9.2\nPackage: libgl1-mesa-dri\nVersion: 99.0.0\nDescription: Dummy package for libgl1-mesa-dri\n' >> libgl1-mesa-dri \
-  && equivs-build libgl1-mesa-dri \
-  && mv libgl1-mesa-dri_*.deb ${PACKAGES_DIR}/libgl1-mesa-dri.deb \
-  && equivs-control adwaita-icon-theme \
-  && printf 'Section: misc\nPriority: optional\nStandards-Version: 3.9.2\nPackage: adwaita-icon-theme\nVersion: 99.0.0\nDescription: Dummy package for adwaita-icon-theme\n' >> adwaita-icon-theme \
-  && equivs-build adwaita-icon-theme \
-  && mv adwaita-icon-theme_*.deb ${PACKAGES_DIR}/adwaita-icon-theme.deb
-
 # Install gost proxy (for process requests with proxy, that require authorization)
-RUN apt-get install -y --no-install-recommends curl  # gost-install.sh requirement
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends curl  # gost-install.sh requirement
 COPY utils/gost-install.sh ./gost-install.sh
 RUN chmod +x ./gost-install.sh && bash -c "./gost-install.sh --install"
 
@@ -66,7 +52,6 @@ ARG UNAME=flare_bypasser
 ARG CHECK_SYSTEM=false
 ARG CHROME_DISABLE_GPU=false
 
-ENV PACKAGES_DIR=/packages
 ENV CHECK_SYSTEM=${CHECK_SYSTEM}
 ENV CHROME_DISABLE_GPU=${CHROME_DISABLE_GPU}
 ENV DEBUG=false
@@ -77,7 +62,6 @@ ENV PYTHONPATH=/usr/lib/python3/dist-packages/
 #< trick for use apt installed packages on package installation with using pip.
 
 # Copy dummy packages
-COPY --from=builder ${PACKAGES_DIR} ${PACKAGES_DIR}
 COPY --from=builder /usr/local/bin/gost /usr/local/bin/gost
 
 # Copy installed chrome
@@ -91,9 +75,9 @@ COPY --from=builder /opt/flare_bypasser/installed_chrome /
 #    apt-cache madison chromium
 
 # Install dummy packages
-RUN dpkg -i ${PACKAGES_DIR}/*.deb \
+RUN \
   # Install dependencies
-  && apt-get update \
+  apt-get update \
   && apt-get install -y --no-install-recommends \
     $(apt-cache depends chromium chromium-common | grep Depends | sed "s/.*ends:\ //" | \
       grep -v -E '^<.*>$' | grep -v -E '^chromium-' | sort -u | tr '\n' ' ') \
@@ -129,6 +113,7 @@ RUN echo "Install python package for arch: $(arch)"
 WORKDIR /app
 
 COPY . flare_bypasser
+RUN pip install requests==2.27.1 websocket-client tldextract DataRecorder DownloadKit lxml
 RUN ADDITIONAL_PYTHONPATH="$PYTHONPATH" pip install --prefer-binary flare_bypasser/
 
 COPY rootfs /

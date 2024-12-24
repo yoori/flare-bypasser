@@ -163,6 +163,9 @@ class BrowserWrapper(object):
       if "could not find node with given id" in str(e).lower():
         # DOM tree changed in runtime
         return (None, True)
+      if "dom agent hasn't been enabled" in str(e).lower():
+        # Ignore "DOM agent isn't enabled" on DOM.disable
+        return (None, True)
     except asyncio.TimeoutError as e:
       if "time ran out while waiting for " in str(e).lower():
         # < zendriver timeout on element waiting
@@ -188,6 +191,9 @@ class BrowserWrapper(object):
     except zendriver.core.connection.ProtocolException as e:
       if "could not find node with given id" in str(e).lower():
         # DOM tree changed in runtime
+        return 0
+      if "dom agent hasn't been enabled" in str(e).lower():
+        # Ignore "DOM agent isn't enabled" on DOM.disable
         return 0
       raise e from e
     except asyncio.TimeoutError:
@@ -417,3 +423,7 @@ class BrowserWrapper(object):
     finally:
       for t in to_cancel_tasks:
         t.cancel()
+        try:  # Wait task after cancel for avoid "Task exception was never retrieved" and other ...
+          await t
+        except:
+          pass

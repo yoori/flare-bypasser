@@ -1,6 +1,6 @@
 # FlareBypasser
-FlareBypasser is a service to bypass Cloudflare and DDoS-GUARD protection,
-work to solve the challenge after October 20, 2024.
+FlareBypasser is a service to bypass Cloudflare and DDoS-GUARD protection, based on [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr), 
+working to solve the challenge after October 20, 2024.
 
 ## How it works
 

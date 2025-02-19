@@ -338,16 +338,14 @@ class Solver(object):
           self._driver = None
     except Solver.Exception as e:
       error_message = (
-        "Error solving the challenge. On platform " + str(sys.platform) +
-        " at step '" + str(e.step) + "': " +
+        "Error solving the challenge. " + Solver._platform_for_error() + "At step '" + str(e.step) + "': " +
         str(e).replace('\n', '\\n')
       )
       logger.error(self._log_prefix + error_message)
       raise Solver.Exception(error_message, step=e.step)
     except Exception as e:
       error_message = (
-        "Error solving the challenge. On platform " + str(sys.platform) +
-        " at step '" + step + "': " +
+        "Error solving the challenge. " + Solver._platform_for_error() + "At step '" + step + "': " +
         str(e).replace('\n', '\\n')
       )
       logger.error(self._log_prefix + error_message)
@@ -697,6 +695,10 @@ class Solver(object):
               return [random.randint(c1_x + 2, c1_x + c1_w - 2), random.randint(c1_y + 2, c1_y + c1_h - 2)]
 
     return None
+
+  @staticmethod
+  def _platform_for_error() -> str:
+    return ("On platform " + str(sys.platform) + "(docker = " + os.environ.get('IN_DOCKER', "false") + "). ")
 
 
 # fix ssl certificates for compiled binaries

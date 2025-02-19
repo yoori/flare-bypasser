@@ -16,7 +16,6 @@ import argparse
 import urllib3.util
 import fastapi
 import pydantic
-import textwrap
 
 import flare_bypasser
 

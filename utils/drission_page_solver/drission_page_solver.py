@@ -12,13 +12,14 @@ browser_path = "/usr/bin/chrome"
 
 logger = logging.getLogger(__name__)
 
+
 class CloudflareBypasser:
   def __init__(self, driver: ChromiumPage, max_retries=-1, log=True):
     self.driver = driver
     self.max_retries = max_retries
     self.log = log
 
-  def search_recursively_shadow_root_with_iframe(self,ele):
+  def search_recursively_shadow_root_with_iframe(self, ele):
     if ele.shadow_root:
       if ele.shadow_root.child().tag == "iframe":
         return ele.shadow_root.child()
@@ -29,7 +30,7 @@ class CloudflareBypasser:
           return result
     return None
 
-  def search_recursively_shadow_root_with_cf_input(self,ele):
+  def search_recursively_shadow_root_with_cf_input(self, ele):
     if ele.shadow_root:
       if ele.shadow_root.ele("tag:input"):
         return ele.shadow_root.ele("tag:input")
@@ -64,7 +65,6 @@ class CloudflareBypasser:
       return button
 
   def log_message(self, message):
-    #if self.log:
     print(message)
 
   def click_verification_button(self):
@@ -145,6 +145,7 @@ def bypass_cloudflare(url: str, retries: int, log: bool, proxy: str = None) -> C
       display.stop()  # Stop Xvfb
       raise e
 
+
 def main():
   logging.basicConfig(
     format='%(asctime)s [%(name)s] [%(levelname)s]: %(message)s',
@@ -158,5 +159,6 @@ def main():
   args = parser.parse_args()
   logger.info("Start")
   bypass_cloudflare(args.site, retries=args.retries, proxy=args.proxy, log=True)
+
 
 main()

@@ -114,7 +114,7 @@ class BrowserWrapper(object):
       )
       zendriver_driver = await zendriver.Browser.create(config)
       return BrowserWrapper(zendriver_driver, user_data_dir = user_data_dir)
-    except:
+    except BaseException:
       shutil.rmtree(user_data_dir, ignore_errors=True)
       raise
 
@@ -426,5 +426,5 @@ class BrowserWrapper(object):
         t.cancel()
         try:  # Wait task after cancel for avoid "Task exception was never retrieved" and other ...
           await t
-        except:
+        except BaseException:
           pass

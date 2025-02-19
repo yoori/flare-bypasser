@@ -16,6 +16,7 @@ import argparse
 import urllib3.util
 import fastapi
 import pydantic
+import textwrap
 
 import flare_bypasser
 
@@ -74,6 +75,7 @@ solver_args = {
   'command_processors': {},
   'proxy_controller': None,
   'disable_gpu': False,
+  'headless': False,
   'debug_dir': None
 }
 
@@ -601,6 +603,14 @@ def init_args_parser():
     with arguments: LOCAL_PORT, UPSTREAM_URL - proxy passed in request"""
   )
   parser.add_argument("--disable-gpu", action='store_true')
+  parser.add_argument(
+    "--headless",
+    help=(
+      "run browser in headless mode for solve challenge. I don't recommend to use it, "
+      "because cloudflare can detect headless mode (in JS)"
+    ),
+    action='store_true'
+  )
   parser.add_argument("--verbose", action='store_true')
   parser.add_argument(
     "--debug-dir", type=str, default=None,
@@ -612,7 +622,7 @@ def init_args_parser():
     help="""directory for save challenge screenshots, that used for detect challenge"""
   )
   parser.add_argument("--forks", type=str, default=None)
-  parser.set_defaults(disable_gpu=False, debug=False)
+  parser.set_defaults(disable_gpu=False, debug=False, headless=False)
   return parser
 
 

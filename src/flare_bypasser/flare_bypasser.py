@@ -170,6 +170,7 @@ class Solver(object):
   _command_processors: typing.Dict[str, BaseCommandProcessor] = []
   _proxy_controller: ProxyController = None
   _disable_gpu: bool = False
+  _headless: bool = False
   _screenshot_i: int = 0
   _debug_dir: str = None
   _log_prefix: str = ''
@@ -186,6 +187,7 @@ class Solver(object):
     self, proxy: str = None, command_processors: typing.Dict[str, BaseCommandProcessor] = {},
     proxy_controller = None,
     disable_gpu = False,
+    headless = False,
     debug_dir: str = None,
     challenge_screenshots_dir: str = None,
     log_prefix: str = '',
@@ -207,6 +209,7 @@ class Solver(object):
     self._command_processors['make_post'] = make_post_command_processor
     self._command_processors['request.post'] = make_post_command_processor
     self._disable_gpu = disable_gpu
+    self._headless = headless
     self._log_prefix = log_prefix
 
   @staticmethod
@@ -303,8 +306,9 @@ class Solver(object):
         try:
           step = 'browser init'
           self._driver: BrowserWrapper = await BrowserWrapper.create(
-            proxy = use_proxy,
-            disable_gpu = self._disable_gpu
+            proxy=use_proxy,
+            disable_gpu=self._disable_gpu,
+            headless=self._headless,
           )
           logger.info(
             self._log_prefix +

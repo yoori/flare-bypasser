@@ -90,7 +90,7 @@ class BrowserWrapper(object):
         XVFB_DISPLAY.start()
 
   @staticmethod
-  async def create(proxy = None, disable_gpu = False):
+  async def create(proxy: bool = None, disable_gpu: bool = False, headless: bool = False):
     user_data_dir = os.path.join("/tmp", str(uuid.uuid4()))  # < Each created chrome should be isolated.
     BrowserWrapper.start_xvfb_display()
     browser_args = []
@@ -101,7 +101,7 @@ class BrowserWrapper(object):
         "--disable-gpu",
         "--disable-software-rasterizer"
       ]
-    if sys.platform == 'win32':
+    if sys.platform == 'win32' or headless:
       browser_args += ["--headless"]
 
     browser_args += ["--user-data-dir=" + user_data_dir]

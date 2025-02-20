@@ -297,7 +297,10 @@ class Solver(object):
       if use_proxy is not None and '@' in use_proxy:
         if not self._proxy_controller:
           raise Solver.Exception("For use proxy with authorization you should pass proxy_controller into c-tor")
-        proxy_holder = self._proxy_controller.get_proxy(use_proxy)
+        try:
+          proxy_holder = self._proxy_controller.get_proxy(use_proxy)
+        except Exception as e:
+          raise Solver.Exception(str(e) + ". Check that gost is installed")
         use_proxy = "socks5://127.0.0.1:" + str(proxy_holder.local_port())
       else:
         proxy_holder = contextlib.nullcontext()

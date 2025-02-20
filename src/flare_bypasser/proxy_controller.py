@@ -22,6 +22,9 @@ class ProxyController(object):
   class NoPortForListen(Exception):
     pass
 
+  class RunProxyCommandError(Exception):
+    pass
+
   class ProxyHolder(object):
     _proxy_storage: object  # ProxyController
     _local_port: int
@@ -140,8 +143,14 @@ class ProxyController(object):
       'LOCAL_PORT': str(proxy_holder._local_port),
       'UPSTREAM_URL': proxy_holder._url})
     logger.info("Start with: " + str(proxy_cmd))
-    proxy_holder._process = subprocess.Popen(
-      oslex.split(proxy_cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+      proxy_holder._process = subprocess.Popen(
+        oslex.split(proxy_cmd),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+      )
+    except Exception as e:
+      raise ProxyController.RunProxyCommandError("Can't start intermediate proxy: " + str(e)) from e
 
   def _close_proxy(self, proxy_holder):
     # Close proxy process

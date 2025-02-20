@@ -89,6 +89,7 @@ I recommend to use normalized rest API (path per command) - it more strict ... S
 #### POST `/get_cookies` (see /docs)
 
 Return cookies after challenge solve.
+Don't forget to use userAgent (obtained from the API) in your code when sending request with this cookie.
 
 Example response:
 

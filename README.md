@@ -90,6 +90,9 @@ I recommend to use normalized rest API (path per command) - it more strict ... S
 
 Return cookies after challenge solve.
 Don't forget to use userAgent (obtained from the API) in your code when sending request with this cookie.
+For sites, that support HTTP/2: I recommend to use library, that support it too, because you can get 403 with using HTTP/1.1 if cookie got with using HTTP/2.
+Python `requests` library support only HTTP/1.1, you can use [AsyncClient](https://github.com/yoori/flare-bypasser/blob/main/src/flare_bypasser/async_client.py)
+or python `httpx` package directly.
 
 Example response:
 

@@ -93,20 +93,22 @@ class BrowserWrapper(object):
   async def create(proxy: bool = None, disable_gpu: bool = False, headless: bool = False):
     user_data_dir = os.path.join("/tmp", str(uuid.uuid4()))  # < Each created chrome should be isolated.
     BrowserWrapper.start_xvfb_display()
-    browser_args = []
+    browser_args = [
+      "--disable-features=PrivacySandboxSettings4",
+    ]
     if proxy:
       browser_args.append("--proxy-server=" + proxy)
     if disable_gpu:
       browser_args += [
         "--disable-gpu",
-        "--disable-software-rasterizer"
+        # "--disable-software-rasterizer",
       ]
     if sys.platform == 'win32' or headless:
       browser_args += ["--headless"]
 
     browser_args += ["--user-data-dir=" + user_data_dir]
     # Disable certificates checking
-    browser_args += ["--ignore-certificate-errors", "--ignore-urlfetcher-cert-requests"]
+    #browser_args += ["--ignore-certificate-errors", "--ignore-urlfetcher-cert-requests"]
     try:
       config = zendriver.Config(
         sandbox=False,

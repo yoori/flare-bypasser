@@ -2,7 +2,7 @@ ARG PYTHON_VERSION=3.11
 
 FROM python:${PYTHON_VERSION}-slim-bookworm AS builder
 
-ARG CHROME_VERSION=""
+ARG CHROME_VERSION="133."
 
 WORKDIR /app/
 

@@ -90,8 +90,11 @@ COPY --from=builder /opt/flare_bypasser/installed_chrome /
 # To check the package versions available you can use this command:
 #    apt-cache madison chromium
 
+RUN echo "=============================================" ; ls -l / ; echo "============================================="
+
 # Install dummy packages
-RUN dpkg -i ${PACKAGES_DIR}/*.deb \
+RUN chmod uog+w /tmp \
+  && dpkg -i ${PACKAGES_DIR}/*.deb \
   # Install dependencies
   && apt-get update \
   && apt-get install -y --no-install-recommends \

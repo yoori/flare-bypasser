@@ -624,8 +624,6 @@ def init_args_parser():
 
 
 def init_extensions(args):
-  global solver_args
-
   # FLARE_BYPASS_COMMANDPROCESSORS format: <command>:<module>.<class>
   # class should have default constructor (without parameters)
   custom_command_processors_str = os.environ.get('FLARE_BYPASS_COMMANDPROCESSORS', None)
@@ -674,11 +672,8 @@ def server_run():
       logging.getLogger('flare_bypasser.flare_bypasser').setLevel(logging.DEBUG)
       logging.getLogger('flare_bypasser.browser_wrapper').setLevel(logging.DEBUG)
 
-    global solver_args
-
     init_extensions(args)
 
-    global request_processing_default_args
     if args.forks:
       request_processing_default_args['forks'] = parse_solve_forks(args.forks)
 

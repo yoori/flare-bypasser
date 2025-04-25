@@ -42,7 +42,8 @@ RUN if [ "$CHROME_VERSION" = "" ] ; then \
 
 # We prefer version from archive, because it is more productive (faster start),
 # but for ARM's here no available versions in archive
-RUN . /tmp/build.env ; if [ "$(arch)" != "x86_64" ] ; then \
+RUN . /tmp/build.env ; \
+  if [ "$(arch)" != "x86_64" ] ; then \
     echo "To install chrome($CHROME_VERSION) from google repository (no archive versions for ARM)" ; \
     chmod +x ./linux_chrome_deb_repo_installer.sh ; \
     bash -c "./linux_chrome_deb_repo_installer.sh /opt/flare_bypasser/installed_chrome/ '$CHROME_VERSION'" || \

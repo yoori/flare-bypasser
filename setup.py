@@ -27,7 +27,6 @@ install_requires = [
   # 'zendriver_flare_bypasser==0.2.7',
   # 'zendriver_flare_bypasser @ git+https://github.com/yoori/zendriver.git@debug4',
 
-  
   'zendriver_flare_bypasser @ git+https://github.com/yoori/zendriver.git@flare-bypasser-test',
   'httpx',
   'argparse',

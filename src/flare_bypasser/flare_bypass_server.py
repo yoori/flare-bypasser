@@ -234,7 +234,6 @@ async def process_solve_request(
     solve_request.proxy = proxy
     solve_request.params = params
 
-    global solver_args
     local_solver_args = copy.copy(solver_args)
 
     if local_solver_args['debug_dir']:
@@ -258,7 +257,6 @@ async def process_solve_request(
     cur_fork_i += 1
 
     if forks is None:
-      global request_processing_default_args
       forks = request_processing_default_args['forks']
 
     if forks:

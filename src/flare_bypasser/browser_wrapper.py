@@ -108,7 +108,7 @@ class BrowserWrapper(object):
 
     browser_args += ["--user-data-dir=" + user_data_dir]
     # Disable certificates checking
-    #browser_args += ["--ignore-certificate-errors", "--ignore-urlfetcher-cert-requests"]
+    # browser_args += ["--ignore-certificate-errors", "--ignore-urlfetcher-cert-requests"]
     try:
       config = zendriver.Config(
         sandbox=False,

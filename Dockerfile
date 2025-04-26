@@ -8,6 +8,9 @@ WORKDIR /app/
 
 ENV PACKAGES_DIR=/packages
 
+# Fix /tmp permissions (problem is actual for some versions of slim-bookworm containers)
+RUN mkdir -p /tmp && chmod og+rwx /tmp
+
 # Build dummy packages to skip installing them and their dependencies
 RUN mkdir -p "${PACKAGES_DIR}" \
   && apt-get update \
@@ -77,6 +80,9 @@ ENV FORKS=
 ENV PYTHONPATH=/usr/lib/python3/dist-packages/
 #< trick for use apt installed packages on package installation with using pip.
 
+# Fix /tmp permissions (problem is actual for some versions of slim-bookworm containers)
+RUN mkdir -p /tmp && chmod og+rwx /tmp
+
 # Copy dummy packages
 COPY --from=builder ${PACKAGES_DIR} ${PACKAGES_DIR}
 COPY --from=builder /usr/local/bin/gost /usr/local/bin/gost
@@ -94,8 +100,7 @@ COPY --from=builder /opt/flare_bypasser/installed_chrome /
 RUN echo "=============================================" ; ls -l / ; echo "============================================="
 
 # Install dummy packages
-RUN chmod uog+w /tmp \
-  && dpkg -i ${PACKAGES_DIR}/*.deb \
+RUN dpkg -i ${PACKAGES_DIR}/*.deb \
   # Install dependencies
   && apt-get update \
   && apt-get install -y --no-install-recommends \

@@ -97,7 +97,7 @@ class CookieModel(pydantic.BaseModel):
   port: typing.Optional[int] = pydantic.Field(default=None, description='Cookie port')
   path: typing.Optional[str] = pydantic.Field(default='/', description='Cookie path')
   secure: typing.Optional[bool] = pydantic.Field(default=True, description='Cookie is secure')
-  expires: typing.Optional[int] = pydantic.Field(
+  expires: typing.Optional[float] = pydantic.Field(
     default=None, description='Cookie expire time in seconds after epoch start'
   )
 

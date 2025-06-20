@@ -123,6 +123,7 @@ class HandleCommandResponse(pydantic.BaseModel):
   startTimestamp: float
   endTimestamp: float
   solution: typing.Optional[HandleCommandResponseSolution] = None
+  version: str
 
 
 async def wait_first_non_exception(tasks, return_condition = lambda x: True):
@@ -298,7 +299,8 @@ async def process_solve_request(
         userAgent=solve_response.user_agent,
         message=solve_response.message,
         response=solve_response.response
-      )
+      ),
+      version=flare_bypasser.__version__,
     )
 
   except Exception as e:
@@ -309,6 +311,7 @@ async def process_solve_request(
       message="Error: " + str(e),
       startTimestamp=start_timestamp,
       endTimestamp=datetime.datetime.timestamp(datetime.datetime.now()),
+      version=flare_bypasser.__version__,
     )
 
 
@@ -650,12 +653,12 @@ def server_run():
 
     logger.info(
       "Start flare_bypass server:\n" +
-      "  version: " + str(flare_bypasser.__version__) + "\n" +
+      "  version: " + flare_bypasser.__version__ + "\n" +
       "  python version = " + ".".join([str(x) for x in list(sys.version_info)]) + "\n" +
       "  os = " + " ".join([platform.system(), platform.release(), platform.version()]) + "\n" +
       "  docker = " + os.environ.get('IN_DOCKER', "false") + "\n" +
-      "  arch = " + str(platform.machine()) + "\n" +
-      "  processor = " + str(platform.processor())
+      "  arch = " + platform.machine() + "\n" +
+      "  processor = " + platform.processor()
     )
 
     parser = init_args_parser()

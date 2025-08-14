@@ -113,7 +113,8 @@ Example response:
       {"name":"PHPSESSID","value":"uk4uefb5p8njsjcbpea1plpl45","port":null,"domain":"torrentleech.pl","path":"/","secure":false}
     ],
     "userAgent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
-    "response": null
+    "response": null,
+    "version": "0.1.54"
   }
 }
 

@@ -133,7 +133,3 @@ Send POST request (with using form). Need to pass postData parameter value.
 ### Advanced Usage
 In some cases you need to make some specific actions on page after challenge solving (click, fill form, ...).
 For this case you can implement own command over extension - see [examples/custom_user_commands](https://github.com/yoori/flare-bypasser/tree/main/examples/custom_user_commands)
-
-### Thanks
-If you would like to thank me, put a link to the sites of my partners:
-https://a.okaif.io (18+)

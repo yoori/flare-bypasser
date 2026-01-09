@@ -113,6 +113,7 @@ class AsyncClient(object):
             continue  # < Repeat request with cf cookies
         # check hcaptcha challenge
         elif "hcaptcha" in response.headers.get('content-security-policy', ''):
+          response_text = response.text.lower()
           if re.search(r'<\s*title\s*>[^><]*bot detection[^><]*<\s*/\s*title\s*>', response_text):
             await self._solve_challenge(url if not solve_url else solve_url)
             continue  # < Repeat request with hcaptcha cookies

@@ -71,45 +71,51 @@ class AsyncClient(object):
       response = await run_method(self._http_client, url, *args, headers = send_headers, **kwargs)
 
       if (
-        response.status_code == 403 and
         response.headers.get('content-type', '').startswith('text/html') and
         response.text
       ):
-        response_text = response.text.lower()
+        # check cloud flare challenge
+        if response.status_code == 403:
+          response_text = response.text.lower()
 
-        # check that it is cloud flare unsolvable block
-        if (
-          (
-            "access denied" in response_text and
-            re.search(r'<\s*title\s*>\s*access denied\s[^><]*cloudflare[^><]*<\s*/\s*title\s*>', response_text)
-          ) or
-          (
-            "ip banned" in response_text and "cloudflare" in response_text and
-            re.search(r'<\s*title\s*>\s*ip banned[^><]*<\s*/\s*title\s*>', response_text)
-          )
-        ):
-          raise AsyncClient.CloudFlareBlocked("IP blocked by cloud flare")
+          # check that it is cloud flare unsolvable block
+          if (
+            (
+              "access denied" in response_text and
+              re.search(r'<\s*title\s*>\s*access denied\s[^><]*cloudflare[^><]*<\s*/\s*title\s*>', response_text)
+            ) or
+            (
+              "ip banned" in response_text and "cloudflare" in response_text and
+              re.search(r'<\s*title\s*>\s*ip banned[^><]*<\s*/\s*title\s*>', response_text)
+            )
+          ):
+            raise AsyncClient.CloudFlareBlocked("IP blocked by cloud flare")
 
-        # check that it is cloud flare block
-        if (
-            (
-              "just a moment..." in response_text and
-              re.search(r'<\s*title\s*>[^><]*just a moment\.\.\.[^><]*<\s*/\s*title\s*>', response_text)
-            ) or
-            (
-              "attention required!" in response_text and
-              re.search(r'<\s*title\s*>[^><]*attention required\s*![^><]*<\s*/\s*title\s*>', response_text)
-            ) or
-            (
-              "captcha challenge" in response_text and
-              re.search(r'<\s*title\s*>[^><]*captcha challenge[^><]*<\s*/\s*title\s*>', response_text)
-            ) or
-            (
-              "ddos-guard" in response_text and
-              re.search(r'<\s*title\s*>[^><]*ddos-guard[^><]*<\s*/\s*title\s*>', response_text)
-            )):
-          await self._solve_challenge(url if not solve_url else solve_url)
-          continue  # < Repeat request with cf cookies
+          # check that it is cloud flare block
+          if (
+              (
+                "just a moment..." in response_text and
+                re.search(r'<\s*title\s*>[^><]*just a moment\.\.\.[^><]*<\s*/\s*title\s*>', response_text)
+              ) or
+              (
+                "attention required!" in response_text and
+                re.search(r'<\s*title\s*>[^><]*attention required\s*![^><]*<\s*/\s*title\s*>', response_text)
+              ) or
+              (
+                "captcha challenge" in response_text and
+                re.search(r'<\s*title\s*>[^><]*captcha challenge[^><]*<\s*/\s*title\s*>', response_text)
+              ) or
+              (
+                "ddos-guard" in response_text and
+                re.search(r'<\s*title\s*>[^><]*ddos-guard[^><]*<\s*/\s*title\s*>', response_text)
+              )):
+            await self._solve_challenge(url if not solve_url else solve_url)
+            continue  # < Repeat request with cf cookies
+        # check hcaptcha challenge
+        elif "hcaptcha" in response.headers.get('content-security-policy', ''):
+          if re.search(r'<\s*title\s*>[^><]*bot detection[^><]*<\s*/\s*title\s*>', response_text):
+            await self._solve_challenge(url if not solve_url else solve_url)
+            continue  # < Repeat request with hcaptcha cookies
 
       return response
 

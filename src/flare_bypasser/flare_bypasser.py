@@ -42,11 +42,18 @@ _ACCESS_DENIED_SELECTORS = [
 
 _CHALLENGE_SELECTORS = [
   # Cloudflare
-  '#cf-challenge-running', '.ray_id', '.attack-box', '#cf-please-wait', '#challenge-spinner', '#trk_jschal_js',
+  '#cf-challenge-running',
+  '.ray_id',
+  '.attack-box',
+  '#cf-please-wait',
+  '#challenge-spinner',
+  '#trk_jschal_js',
   # Custom CloudFlare for EbookParadijs, Film-Paleis, MuziekFabriek and Puur-Hollands
   'td.info #js_info',
   # Fairlane / pararius.com
-  'div.vc div.text-box h2'
+  'div.vc div.text-box h2',
+  # HCaptcha
+  '#hcaptcha-container',
 ]
 
 _SHORT_TIMEOUT = 1

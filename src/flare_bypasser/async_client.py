@@ -130,7 +130,7 @@ class AsyncClient(object):
       if self._http_client:
         for c in self._http_client.cookies.jar:
           # c is http.cookiejar.Cookie
-          solve_send_cookies.append({
+          append_cookie = {
             "name": c.name,
             "value": c.value,
             "domain": c.domain,
@@ -138,7 +138,8 @@ class AsyncClient(object):
             "port": c.port,
             "secure": c.secure,
             "expires": c.expires
-          })
+          }
+          solve_send_cookies.append(append_cookie)
       solver_request = {
         "maxTimeout": 60000,
         "url": url,

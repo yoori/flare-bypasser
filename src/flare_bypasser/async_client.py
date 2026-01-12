@@ -175,6 +175,7 @@ class AsyncClient(object):
         raise AsyncClient.Exception("Solver is unavailable: status_code = " + str(solver_response.status_code))
 
       response_json = solver_response.json()
+      print("SOLVE RESULT '" + str(url) + "': " + json.dumps(response_json), flush=True)
       if "solution" not in response_json:
         raise AsyncClient.Exception(
           "Can't solve challenge: no solution in response for '" + str(url) + "': " +

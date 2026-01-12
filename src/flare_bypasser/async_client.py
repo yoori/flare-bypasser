@@ -128,10 +128,12 @@ class AsyncClient(object):
       if not solve_challenge and self._additional_hook is not None:
         solve_challenge = self._additional_hook(response)
 
+      print("SOLVE CHALLENGE", flush=True)
       if solve_challenge:
         await self._solve_challenge(url if not solve_url else solve_url)
         continue  # < Repeat request with cf cookies
 
+      print("SOLVE CHALLENGE: SOLVED", flush=True)
       return response
 
     raise AsyncClient.Exception(

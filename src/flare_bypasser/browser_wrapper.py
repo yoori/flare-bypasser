@@ -288,7 +288,7 @@ class BrowserWrapper(object):
         domain=c.get('domain', None),
         path=c.get('path', None),
         secure=c.get('secure', False),
-        expires=(float(c['expires']) if 'expires' in c else None),  #< push only float to zendriver.
+        expires=(float(c['expires']) if 'expires' in c and c['expires'] is not None else None),  #< push only float to zendriver.
         same_site=c.get('same_site', None)
       )
       set_cookies.append(add_cookie)

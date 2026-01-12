@@ -203,7 +203,8 @@ async def process_solve_request(
   max_timeout: int = None,  # in msec.
   proxy: typing.Union[str, ProxyModel] = None,
   params: dict = {},
-  forks: typing.List[DefferedForksModel] = None  # < Forks for solve. Usable for sites with unstable loading.
+  forks: typing.List[DefferedForksModel] = None,  # < Forks for solve. Usable for sites with unstable loading.
+  custom_challenge_selectors: typing.List[str] = None,
 ):
   start_timestamp = datetime.datetime.timestamp(datetime.datetime.now())
 
@@ -234,6 +235,7 @@ async def process_solve_request(
     solve_request.max_timeout = max_timeout * 1.0 / 1000
     solve_request.proxy = proxy
     solve_request.params = params
+    solve_request.custom_challenge_selectors = custom_challenge_selectors
 
     local_solver_args = copy.copy(solver_args)
 
@@ -388,6 +390,10 @@ async def Get_cookies_after_solve(
     typing.List[DefferedForksModel],
     fastapi.Body(description="Request processing forking model (usable for web sites with ustable challenge loading).")
   ] = None,
+  custom_challenge_selectors: typing_extensions.Annotated[
+    typing.List[str],
+    fastapi.Body(description="Custom css selectors for find challenge on pgae")
+  ] = None,
 ):
   return await process_solve_request(
     url=url,
@@ -397,6 +403,7 @@ async def Get_cookies_after_solve(
     proxy=proxy,
     params=None,
     forks=forks,
+    custom_challenge_selectors=custom_challenge_selectors,
   )
 
 
@@ -425,6 +432,10 @@ async def Get_cookies_and_page_content_after_solve(
     typing.List[DefferedForksModel],
     fastapi.Body(description="Request processing forking model (usable for web sites with ustable challenge loading).")
   ] = None,
+  custom_challenge_selectors: typing_extensions.Annotated[
+    typing.List[str],
+    fastapi.Body(description="Custom css selectors for find challenge on pgae")
+  ] = None,
 ):
   return await process_solve_request(
     url=url,
@@ -434,6 +445,7 @@ async def Get_cookies_and_page_content_after_solve(
     proxy=proxy,
     params=None,
     forks=forks,
+    custom_challenge_selectors=custom_challenge_selectors,
   )
 
 
@@ -466,6 +478,10 @@ async def Get_cookies_and_POST_request_result(
     typing.List[DefferedForksModel],
     fastapi.Body(description="Request processing forking model (usable for web sites with ustable challenge loading).")
   ] = None,
+  custom_challenge_selectors: typing_extensions.Annotated[
+    typing.List[str],
+    fastapi.Body(description="Custom css selectors for find challenge on pgae")
+  ] = None,
   # postDataContentType: typing_extensions.Annotated[
   #   str,
   #   fastapi.Body(description="Content-Type that will be sent.")
@@ -482,6 +498,7 @@ async def Get_cookies_and_POST_request_result(
       # 'postDataContentType': postDataContentType,
     },
     forks=forks,
+    custom_challenge_selectors=custom_challenge_selectors,
   )
 
 
@@ -517,6 +534,10 @@ async def Process_user_custom_command(
     typing.List[DefferedForksModel],
     fastapi.Body(description="Request processing forking model (usable for web sites with ustable challenge loading).")
   ] = None,
+  custom_challenge_selectors: typing_extensions.Annotated[
+    typing.List[str],
+    fastapi.Body(description="Custom css selectors for find challenge on pgae")
+  ] = None,
 ):
   return await process_solve_request(
     url=url,
@@ -525,7 +546,8 @@ async def Process_user_custom_command(
     max_timeout=maxTimeout,
     proxy=proxy,
     params=params,
-    forks=forks
+    forks=forks,
+    custom_challenge_selectors=custom_challenge_selectors,
   )
 
 

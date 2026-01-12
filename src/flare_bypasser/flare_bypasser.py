@@ -64,6 +64,7 @@ class Request(object):
   max_timeout: float = 60  # timeout in sec
   cookies: dict = None
   params: dict = None
+  custom_challenge_selectors: typing.List[str] = None
 
   def __init__(self, _dict=None):
     if _dict:
@@ -360,7 +361,7 @@ class Solver(object):
     False: if not detected.
     None: if page isn't loaded.
   """
-  async def _check_challenge(self) -> typing.Optional[bool]:
+  async def _check_challenge(self, req: Request) -> typing.Optional[bool]:
     page_title, page_loaded = await self._driver.title()
 
     if not page_loaded:
@@ -372,19 +373,24 @@ class Solver(object):
 
       # Reask title (page loading can be finished between title getting and html checking)
       page_title, page_loaded = await self._driver.title()
-      if page_title is None:
+      # Custom selectors can be used for page without title
+      if (
+        page_title is None and
+        (req.custom_challenge_selectors is None or len(req.custom_challenge_selectors) == 0)
+      ):
         return False
 
-    page_title = page_title.lower()
+    if page_title is not None:
+      page_title = page_title.lower()
 
-    # find access denied titles
-    if Solver.title_is_denied_title(page_title):
-      raise Exception(
-        "Cloudflare has blocked this request. "
-        "Probably your IP is banned for this site, check in your web browser, title = '" +
-        str(page_title) +
-        "'"
-      )
+      # find access denied titles
+      if Solver.title_is_denied_title(page_title):
+        raise Exception(
+          "Cloudflare has blocked this request. "
+          "Probably your IP is banned for this site, check in your web browser, title = '" +
+          str(page_title) +
+          "'"
+        )
 
     # find access denied selectors
     for selector in _ACCESS_DENIED_SELECTORS:
@@ -394,13 +400,15 @@ class Solver(object):
           'Probably your IP is banned for this site, check in your web browser.'
         )
 
-    # find challenge by title
     challenge_found = False
-    for title in _CHALLENGE_TITLES:
-      if title.lower() == page_title.lower():
-        challenge_found = True
-        logger.info(self._log_prefix + "Challenge detected. Title found: " + page_title)
-        break
+
+    # find challenge by title
+    if page_title is not None:
+      for title in _CHALLENGE_TITLES:
+        if title.lower() == page_title.lower():
+          challenge_found = True
+          logger.info(self._log_prefix + "Challenge detected. Title found: " + page_title)
+          break
 
     if not challenge_found:
       # find challenge by selectors
@@ -410,9 +418,16 @@ class Solver(object):
           logger.info(self._log_prefix + "Challenge detected. Selector found: " + selector)
           break
 
+    if not challenge_found and req.custom_challenge_selectors is not None:
+      for selector in req.custom_challenge_selectors:
+        if (await self._driver.select_count(selector)) > 0:
+          challenge_found = True
+          logger.info(self._log_prefix + "Challenge detected. Custom selector found: " + selector)
+          break
+
     return challenge_found
 
-  async def _challenge_wait_and_click_loop(self):
+  async def _challenge_wait_and_click_loop(self, req: Request):
     attempt = 0
 
     while True:
@@ -420,7 +435,7 @@ class Solver(object):
       await self.save_screenshot('attempt')
 
       # check that challenge present (wait when it will disappear after click)
-      challenge_found = await self._check_challenge()
+      challenge_found = await self._check_challenge(req)
 
       if challenge_found:
         logger.info(self._log_prefix + "To check checkbox presense")
@@ -439,7 +454,7 @@ class Solver(object):
           await self.save_screenshot('to_verify_click', image=page_image, mark_coords=click_coord)
           # recheck that challenge present - we can be already redirected and
           # need to exclude click on result page
-          challenge_found = await self._check_challenge()
+          challenge_found = await self._check_challenge(req)
           if not challenge_found:
             logger.info(self._log_prefix + "Challenge disappeared on step #" + str(attempt))
             break
@@ -508,7 +523,7 @@ class Solver(object):
 
       step = 'check challenge'
       # find challenge by title
-      challenge_found = await self._check_challenge()
+      challenge_found = await self._check_challenge(req)
 
       await self.save_screenshot('after_challenge_check')
 
@@ -520,7 +535,7 @@ class Solver(object):
         step = 'solve challenge'
         logger.info(self._log_prefix + "Challenge detected, to solve it")
 
-        await self._challenge_wait_and_click_loop()
+        await self._challenge_wait_and_click_loop(req)
         res.message = "Challenge solved!"  # expect exception if challenge isn't solved
 
         logger.info(self._log_prefix + "Challenge solving finished")

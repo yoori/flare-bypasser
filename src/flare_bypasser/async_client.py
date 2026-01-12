@@ -15,6 +15,8 @@ transparent cloud flare protection bypassing.
 class AsyncClient(object):
   _solver_url = None
   _http_client: httpx.AsyncClient = None
+  _additional_hook = None
+  _custom_challenge_selectors: typing.List[str] = None
   _args = []
   _kwargs = {}
   _user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
@@ -28,8 +30,17 @@ class AsyncClient(object):
   class CloudFlareBlocked(Exception):
     pass
 
-  def __init__(self, solver_url, *args, **kwargs):
+  def __init__(
+    self,
+    solver_url,
+    *args,
+    additional_hook = None,
+    custom_challenge_selectors: typing.List[str] = None,
+    **kwargs
+  ):
     self._solver_url = solver_url
+    self._additional_hook = additional_hook
+    self._custom_challenge_selectors = custom_challenge_selectors
     self._args = args
     self._kwargs = kwargs
 
@@ -70,6 +81,8 @@ class AsyncClient(object):
       send_headers['cache-control'] = 'no-cache'  # < Disable cache, because httpx can return cached captcha response.
       response = await run_method(self._http_client, url, *args, headers = send_headers, **kwargs)
 
+      solve_challenge: bool = False
+
       if (
         response.status_code == 403 and
         response.headers.get('content-type', '').startswith('text/html') and
@@ -108,8 +121,14 @@ class AsyncClient(object):
               "ddos-guard" in response_text and
               re.search(r'<\s*title\s*>[^><]*ddos-guard[^><]*<\s*/\s*title\s*>', response_text)
             )):
-          await self._solve_challenge(url if not solve_url else solve_url)
-          continue  # < Repeat request with cf cookies
+          solve_challenge = True
+
+      if not solve_challenge and self._additional_hook is not None:
+        solve_challenge = self._additional_hook(response)
+
+      if solve_challenge:
+        await self._solve_challenge(url if not solve_url else solve_url)
+        continue  # < Repeat request with cf cookies
 
       return response
 
@@ -140,6 +159,10 @@ class AsyncClient(object):
         # it can contains some required information other that cloud flare marker.
         "proxy": self._kwargs.get('proxy', None),
       }
+
+      if self._custom_challenge_selectors is not None:
+        solver_request['custom_challenge_selectors'] = self._custom_challenge_selectors
+
       solver_response = await solver_client.post(
         self._solver_url + '/get_cookies',
         headers={

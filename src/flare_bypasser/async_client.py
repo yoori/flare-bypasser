@@ -36,11 +36,13 @@ class AsyncClient(object):
     *args,
     additional_hook = None,
     custom_challenge_selectors: typing.List[str] = None,
+    max_tries = 2,
     **kwargs
   ):
     self._solver_url = solver_url
     self._additional_hook = additional_hook
     self._custom_challenge_selectors = custom_challenge_selectors
+    self._max_tries = max_tries
     self._args = args
     self._kwargs = kwargs
 
@@ -175,7 +177,12 @@ class AsyncClient(object):
         raise AsyncClient.Exception("Solver is unavailable: status_code = " + str(solver_response.status_code))
 
       response_json = solver_response.json()
-      print("SOLVE RESULT '" + str(url) + "': " + json.dumps(solver_request) + " => " + json.dumps(response_json), flush=True)
+      print(
+        "SOLVE RESULT '" + str(url) + "': " + json.dumps(solver_request) + " => " +
+        json.dumps(response_json) +
+        ", KWARGS: " + str(self._kwargs),
+        flush=True
+      )
       if "solution" not in response_json:
         raise AsyncClient.Exception(
           "Can't solve challenge: no solution in response for '" + str(url) + "': " +

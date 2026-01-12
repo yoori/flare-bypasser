@@ -36,11 +36,13 @@ class AsyncClient(object):
     *args,
     additional_hook = None,
     custom_challenge_selectors: typing.List[str] = None,
+    max_tries = 2,
     **kwargs
   ):
     self._solver_url = solver_url
     self._additional_hook = additional_hook
     self._custom_challenge_selectors = custom_challenge_selectors
+    self._max_tries = max_tries
     self._args = args
     self._kwargs = kwargs
 

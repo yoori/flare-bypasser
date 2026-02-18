@@ -50,7 +50,7 @@ RUN . /tmp/build.env ; \
     echo "To install chrome($CHROME_VERSION) from google repository (no archive versions for ARM)" ; \
     chmod +x ./linux_chrome_deb_repo_installer.sh ; \
     bash -c "./linux_chrome_deb_repo_installer.sh /opt/flare_bypasser/installed_chrome/ '$CHROME_VERSION'" || \
-    { echo "Can't install chrome (required version '$CHROME_VERSION')" >&2 ; exit 1 ; } ; \
+    { echo "Can't install chrome for $(arch) (required version '$CHROME_VERSION')" >&2 ; exit 1 ; } ; \
   else \
     echo "To install chrome($CHROME_VERSION) from archive" ; \
     mkdir -p /opt/flare_bypasser/installed_chrome/usr/bin/ ; \
@@ -58,7 +58,7 @@ RUN . /tmp/build.env ; \
       --version-prefix="$CHROME_VERSION" \
       --install-root=/opt/flare_bypasser/installed_chrome/usr/bin/ \
       --arch=$(arch) || \
-    { echo "Can't install chrome (required version '$CHROME_VERSION')" >&2 ; exit 1 ; } ; \
+    { echo "Can't install chrome for $(arch) (required version '$CHROME_VERSION')" >&2 ; exit 1 ; } ; \
   fi
 
 

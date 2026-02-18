@@ -32,9 +32,9 @@ _ACCESS_DENIED_TITLES = [
 ]
 
 _CHALLENGE_TITLES = [
-  re.compile(r'^Just a moment[.][.][.]$'),
-  re.compile(r'^DDoS-Guard$'),
-  re.compile(r'^проверка.*вы\s+человек$'),
+  re.compile(r'^just a moment[.][.][.]$', flags=re.UNICODE | re.IGNORECASE),
+  re.compile(r'^ddos-guard$', flags=re.UNICODE | re.IGNORECASE),
+  re.compile(r'^проверка.*вы\s+человек$', flags=re.UNICODE | re.IGNORECASE),
 ]
 
 _ACCESS_DENIED_SELECTORS = [

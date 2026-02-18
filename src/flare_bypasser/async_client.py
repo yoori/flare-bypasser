@@ -1,8 +1,17 @@
 import typing
 import copy
+import unicodedata
+import dataclasses
 import json
 import re
 import httpx
+
+
+@dataclasses.dataclass
+class ChallengeCheck:
+  keywords: typing.List[str] = None
+  regexp: re.Pattern = None
+  blocked: bool = False
 
 
 """
@@ -13,16 +22,18 @@ transparent cloud flare protection bypassing.
 
 
 class AsyncClient(object):
-  _solver_url = None
+  _solver_url: str = None
   _http_client: httpx.AsyncClient = None
   _additional_hook = None
   _custom_challenge_selectors: typing.List[str] = None
   _args = []
   _kwargs = {}
-  _user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+  _user_agent: str = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
   # < base user-agent that will be used before first challenge solve,
   # after it will be replaced with solver actual user-agent
-  _max_tries = 2
+  _max_tries: int = 2
+  _solve_with_empty_cookies: bool = False
+  _challenge_checks: typing.List[ChallengeCheck] = []
 
   class Exception(Exception):
     pass
@@ -37,14 +48,52 @@ class AsyncClient(object):
     additional_hook = None,
     custom_challenge_selectors: typing.List[str] = None,
     max_tries = 2,
+    solve_with_empty_cookies: bool = False,  # < If challenge detected solve it with empty cookies.
     **kwargs
   ):
     self._solver_url = solver_url
     self._additional_hook = additional_hook
     self._custom_challenge_selectors = custom_challenge_selectors
     self._max_tries = max_tries
+    self._solve_with_empty_cookies = solve_with_empty_cookies
     self._args = args
     self._kwargs = kwargs
+    self._challenge_checks = {
+      403: [
+        ChallengeCheck(
+          keywords=['access denied'],
+          regexp=re.compile(r'<\s*title\s*>\s*access denied\s[^><]*cloudflare[^><]*<\s*/\s*title\s*>'),
+          blocked=True,
+        ),
+        ChallengeCheck(
+          keywords=['ip banned', 'cloudflare'],
+          regexp=re.compile(r'<\s*title\s*>\s*access denied\s[^><]*cloudflare[^><]*<\s*/\s*title\s*>'),
+          blocked=True,
+        ),
+        ChallengeCheck(
+          keywords=['just a moment...'],
+          regexp=re.compile(r'<\s*title\s*>[^><]*just a moment\.\.\.[^><]*<\s*/\s*title\s*>'),
+        ),
+        ChallengeCheck(
+          keywords=['attention required!'],
+          regexp=re.compile(r'<\s*title\s*>[^><]*attention required\s*![^><]*<\s*/\s*title\s*>'),
+        ),
+        ChallengeCheck(
+          keywords=['captcha challenge'],
+          regexp=re.compile(r'<\s*title\s*>[^><]*captcha challenge[^><]*<\s*/\s*title\s*>'),
+        ),
+        ChallengeCheck(
+          keywords=['ddos-guard'],
+          regexp=re.compile(r'<\s*title\s*>[^><]*ddos-guard[^><]*<\s*/\s*title\s*>'),
+        ),
+      ],
+      200: [
+        ChallengeCheck(
+          keywords=[unicodedata.normalize('NFKC', 'проверка'), unicodedata.normalize('NFKC', 'человек')],
+          regexp=re.compile(r'<\s*title\s*>[^><]*проверка[^><]*вы\s+человек[^><]*<\s*/\s*title\s*>'),
+        ),
+      ],
+    }
 
   async def __aenter__(self):
     self._http_client = None  # < Cleanup previously opened connections
@@ -86,44 +135,29 @@ class AsyncClient(object):
       solve_challenge: bool = False
 
       if (
-        response.status_code == 403 and
+        response.status_code in self._challenge_checks and
         response.headers.get('content-type', '').startswith('text/html') and
         response.text
       ):
-        response_text = response.text.lower()
-
-        # check that it is cloud flare unsolvable block
-        if (
-          (
-            "access denied" in response_text and
-            re.search(r'<\s*title\s*>\s*access denied\s[^><]*cloudflare[^><]*<\s*/\s*title\s*>', response_text)
-          ) or
-          (
-            "ip banned" in response_text and "cloudflare" in response_text and
-            re.search(r'<\s*title\s*>\s*ip banned[^><]*<\s*/\s*title\s*>', response_text)
-          )
-        ):
-          raise AsyncClient.CloudFlareBlocked("IP blocked by cloud flare")
+        response_text = unicodedata.normalize('NFKC', response.text.lower())
 
         # check that it is cloud flare block
-        if (
-            (
-              "just a moment..." in response_text and
-              re.search(r'<\s*title\s*>[^><]*just a moment\.\.\.[^><]*<\s*/\s*title\s*>', response_text)
-            ) or
-            (
-              "attention required!" in response_text and
-              re.search(r'<\s*title\s*>[^><]*attention required\s*![^><]*<\s*/\s*title\s*>', response_text)
-            ) or
-            (
-              "captcha challenge" in response_text and
-              re.search(r'<\s*title\s*>[^><]*captcha challenge[^><]*<\s*/\s*title\s*>', response_text)
-            ) or
-            (
-              "ddos-guard" in response_text and
-              re.search(r'<\s*title\s*>[^><]*ddos-guard[^><]*<\s*/\s*title\s*>', response_text)
-            )):
-          solve_challenge = True
+        for challenge_check in self._challenge_checks[response.status_code]:
+          check_regexp: bool = True
+          if challenge_check.keywords is not None:
+            for kw in challenge_check.keywords:
+              if kw not in response_text:
+                check_regexp = False
+                break
+
+          if (
+            check_regexp and
+            (challenge_check.regexp is None or re.search(challenge_check.regexp, response_text))
+          ):
+            if challenge_check.blocked:
+              raise AsyncClient.CloudFlareBlocked("IP blocked by cloud flare")
+            solve_challenge = True
+            break
 
       if not solve_challenge and self._additional_hook is not None:
         solve_challenge = self._additional_hook(response)
@@ -141,7 +175,7 @@ class AsyncClient(object):
   async def _solve_challenge(self, url):
     async with httpx.AsyncClient(http2 = False) as solver_client:
       solve_send_cookies = []
-      if self._http_client:
+      if not self._solve_with_empty_cookies and self._http_client:
         for c in self._http_client.cookies.jar:
           # c is http.cookiejar.Cookie
           solve_send_cookies.append({

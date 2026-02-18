@@ -12,6 +12,12 @@ bypass Cloudflare using other HTTP clients.
 FlareBypasser don't use intrusive methods (DOM change, including shadow-root mode change) and
 don't use driver specific abilities (shadow-root navigation), it search challenge position by image processing.
 
+This solution allows you to bypass the flare challenge and similar visual challenges, like this:
+![homemade captcha](docs/images/captcha1.jpg)
+
+But for some specific challenges need to extend _CHALLENGE_TITLES or _CHALLENGE_SELECTORS for detect
+the presence of captcha on the site.
+
 ## Installation
 
 ### Docker

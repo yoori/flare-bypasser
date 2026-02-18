@@ -205,6 +205,7 @@ async def process_solve_request(
   params: dict = {},
   forks: typing.List[DefferedForksModel] = None,  # < Forks for solve. Usable for sites with unstable loading.
   custom_challenge_selectors: typing.List[str] = None,
+  custom_title_regexps: typing.List[str] = None,
 ):
   start_timestamp = datetime.datetime.timestamp(datetime.datetime.now())
 
@@ -236,6 +237,7 @@ async def process_solve_request(
     solve_request.proxy = proxy
     solve_request.params = params
     solve_request.custom_challenge_selectors = custom_challenge_selectors
+    solve_request.custom_title_regexps = custom_title_regexps
 
     local_solver_args = copy.copy(solver_args)
 
@@ -392,7 +394,11 @@ async def Get_cookies_after_solve(
   ] = None,
   custom_challenge_selectors: typing_extensions.Annotated[
     typing.List[str],
-    fastapi.Body(description="Custom css selectors for find challenge on pgae")
+    fastapi.Body(description="Custom css selectors for find challenge on page")
+  ] = None,
+  custom_title_regexps: typing_extensions.Annotated[
+    typing.List[str],
+    fastapi.Body(description="Custom title regexps for find challenge")
   ] = None,
 ):
   return await process_solve_request(
@@ -404,6 +410,7 @@ async def Get_cookies_after_solve(
     params=None,
     forks=forks,
     custom_challenge_selectors=custom_challenge_selectors,
+    custom_title_regexps=custom_title_regexps,
   )
 
 
@@ -436,6 +443,10 @@ async def Get_cookies_and_page_content_after_solve(
     typing.List[str],
     fastapi.Body(description="Custom css selectors for find challenge on pgae")
   ] = None,
+  custom_title_regexps: typing_extensions.Annotated[
+    typing.List[str],
+    fastapi.Body(description="Custom title regexps for find challenge")
+  ] = None,
 ):
   return await process_solve_request(
     url=url,
@@ -446,6 +457,7 @@ async def Get_cookies_and_page_content_after_solve(
     params=None,
     forks=forks,
     custom_challenge_selectors=custom_challenge_selectors,
+    custom_title_regexps=custom_title_regexps,
   )
 
 
@@ -482,6 +494,10 @@ async def Get_cookies_and_POST_request_result(
     typing.List[str],
     fastapi.Body(description="Custom css selectors for find challenge on pgae")
   ] = None,
+  custom_title_regexps: typing_extensions.Annotated[
+    typing.List[str],
+    fastapi.Body(description="Custom title regexps for find challenge")
+  ] = None,
   # postDataContentType: typing_extensions.Annotated[
   #   str,
   #   fastapi.Body(description="Content-Type that will be sent.")
@@ -499,6 +515,7 @@ async def Get_cookies_and_POST_request_result(
     },
     forks=forks,
     custom_challenge_selectors=custom_challenge_selectors,
+    custom_title_regexps=custom_title_regexps,
   )
 
 
@@ -538,6 +555,10 @@ async def Process_user_custom_command(
     typing.List[str],
     fastapi.Body(description="Custom css selectors for find challenge on pgae")
   ] = None,
+  custom_title_regexps: typing_extensions.Annotated[
+    typing.List[str],
+    fastapi.Body(description="Custom title regexps for find challenge")
+  ] = None,
 ):
   return await process_solve_request(
     url=url,
@@ -548,6 +569,7 @@ async def Process_user_custom_command(
     params=params,
     forks=forks,
     custom_challenge_selectors=custom_challenge_selectors,
+    custom_title_regexps=custom_title_regexps,
   )
 
 

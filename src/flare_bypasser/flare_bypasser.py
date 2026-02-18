@@ -11,6 +11,8 @@ import certifi
 import contextlib
 import html
 import urllib
+import re
+import unicodedata
 
 # Image processing imports
 import numpy as np
@@ -30,8 +32,9 @@ _ACCESS_DENIED_TITLES = [
 ]
 
 _CHALLENGE_TITLES = [
-  'Just a moment...',
-  'DDoS-Guard'
+  re.compile(r'^Just a moment[.][.][.]$'),
+  re.compile(r'^DDoS-Guard$'),
+  re.compile(r'^проверка.*вы\s+человек$'),
 ]
 
 _ACCESS_DENIED_SELECTORS = [
@@ -65,6 +68,7 @@ class Request(object):
   cookies: dict = None
   params: dict = None
   custom_challenge_selectors: typing.List[str] = None
+  custom_title_regexps: typing.List[str] = None
 
   def __init__(self, _dict=None):
     if _dict:
@@ -404,11 +408,23 @@ class Solver(object):
 
     # find challenge by title
     if page_title is not None:
-      for title in _CHALLENGE_TITLES:
-        if title.lower() == page_title.lower():
+      norm_page_title = unicodedata.normalize('NFKC', page_title.lower())
+      for title_re in _CHALLENGE_TITLES:
+        if title_re.match(norm_page_title):
           challenge_found = True
           logger.info(self._log_prefix + "Challenge detected. Title found: " + page_title)
           break
+
+      if not challenge_found and req.custom_title_regexps is not None:
+        for title_re in req.custom_title_regexps:
+          if re.match(
+            unicodedata.normalize('NFKC', title_re),
+            norm_page_title,
+            flags=re.UNICODE | re.IGNORECASE,
+          ):
+            challenge_found = True
+            logger.info(self._log_prefix + "Challenge detected. Title found: " + page_title)
+            break
 
     if not challenge_found:
       # find challenge by selectors

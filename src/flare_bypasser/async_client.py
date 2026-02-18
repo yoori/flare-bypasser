@@ -199,6 +199,7 @@ class AsyncClient(object):
       if self._custom_challenge_selectors is not None:
         solver_request['custom_challenge_selectors'] = self._custom_challenge_selectors
 
+      print("SOLVE REQUEST: " + json.dumps(solver_request))
       solver_response = await solver_client.post(
         self._solver_url + '/get_cookies',
         headers={
@@ -211,6 +212,7 @@ class AsyncClient(object):
         raise AsyncClient.Exception("Solver is unavailable: status_code = " + str(solver_response.status_code))
 
       response_json = solver_response.json()
+      print("SOLVE RESPONSE: " + json.dumps(response_json))
       if "solution" not in response_json:
         raise AsyncClient.Exception(
           "Can't solve challenge: no solution in response for '" + str(url) + "': " +

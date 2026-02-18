@@ -2,7 +2,11 @@ ARG PYTHON_VERSION=3.11
 
 FROM python:${PYTHON_VERSION}-slim-bookworm AS builder
 
-ARG CHROME_VERSION="134."
+ARG CHROME_VERSION=""
+ARG CHROME_VERSION_x86_64="134."
+ARG CHROME_VERSION_arm64="120."
+ARG CHROME_VERSION_aarch64="130."
+ARG CHROME_VERSION_armv7l="130."
 
 WORKDIR /app/
 
@@ -32,16 +36,15 @@ RUN chmod +x ./gost-install.sh && bash -c "./gost-install.sh --install"
 COPY utils/linux_chrome_archive_installer.py ./linux_chrome_archive_installer.py
 COPY utils/linux_chrome_deb_repo_installer.sh ./linux_chrome_deb_repo_installer.sh
 
-# If CHROME_VERSION ins't defined obviously use tested version by platform.
-# TODO: for arm64 (mac m1) check: m.b. chromium 130 is available - in this case use equal versions for arm64,aarch64.
+# If CHROME_VERSION is not set explicitly, use tested pinned version per platform.
 RUN if [ "$CHROME_VERSION" = "" ] ; then \
   BUILD_ARCH="$(arch)" ; \
-  if [ "$BUILD_ARCH" = "arm64" ] ; then echo 'CHROME_VERSION="120."' >>/tmp/build.env ; \
-  elif [ "$BUILD_ARCH" = "aarch64" -o "$BUILD_ARCH" = "armv7l" ] ; then echo 'CHROME_VERSION="130."' >>/tmp/build.env ; \
-  else echo 'CHROME_VERSION="131."' >>/tmp/build.env ; \
+  eval "CHROME_VERSION=\${CHROME_VERSION_${BUILD_ARCH}:-}" ; \
+  if [ "$CHROME_VERSION" = "" ] ; then \
+    echo "Unsupported build architecture: $BUILD_ARCH" >&2 ; exit 1 ; \
   fi ; \
-  else echo 'CHROME_VERSION="'"$CHROME_VERSION"'"' >>/tmp/build.env ; \
-  fi
+  fi ; \
+  echo 'CHROME_VERSION="'"$CHROME_VERSION"'"' >>/tmp/build.env
 
 # We prefer version from archive, because it is more productive (faster start),
 # but for ARM's here no available versions in archive

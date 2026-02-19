@@ -67,7 +67,7 @@ RUN . /tmp/build.env ; \
 
 FROM python:${PYTHON_VERSION}-slim-bookworm
 
-ARG UID=1111
+ARG UID=0
 ARG GID=0
 ARG UNAME=flare_bypasser
 ARG CHECK_SYSTEM=false
@@ -80,6 +80,7 @@ ENV DEBUG=false
 ENV VERBOSE=false
 ENV SAVE_CHALLENGE_SCREENSHOTS=false
 ENV FORKS=
+ENV BROWSER_WRAPPER=zendriver
 ENV PYTHONPATH=/usr/lib/python3/dist-packages/
 #< trick for use apt installed packages on package installation with using pip.
 
@@ -121,15 +122,6 @@ RUN dpkg -i ${PACKAGES_DIR}/*.deb \
 
 RUN mkdir -p "/app/.config/chromium/Crash Reports/pending"
 
-RUN if [ "$UID" -ne 0 ] ; then \
-  echo '%sudo ALL=(ALL:ALL) NOPASSWD:ALL' >/etc/sudoers.d/nopasswd \
-  && adduser --disabled-password --gecos '' --uid "${UID}" --gid "${GID}" --shell /bin/bash ${UNAME} \
-  && adduser ${UNAME} sudo \
-  && chown -R ${UNAME} /app/ \
-  && mkdir -p /opt/flare_bypasser/var/ \
-  && chown -R ${UNAME} /opt/flare_bypasser/var/ ; \
-  fi
-
 # Update root CA for chrome sites certificates validation
 RUN update-ca-certificates
 
@@ -143,12 +135,10 @@ WORKDIR /app
 COPY . flare_bypasser
 RUN ADDITIONAL_PYTHONPATH="$PYTHONPATH" pip install --prefer-binary flare_bypasser/
 
-COPY rootfs /
-
 # Cleanup environment - decrease image size.
 RUN pip cache purge && apt clean
 
-USER ${UID}
+COPY rootfs /
 
 # dumb-init avoids zombie chromium processes
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]

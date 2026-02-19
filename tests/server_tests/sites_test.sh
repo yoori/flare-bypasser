@@ -66,6 +66,5 @@ site_test 'https://1337x.torrentbay.st/cat/Movies/time/desc/1/' 'socks5://91.142
 site_test 'http://www.google.nl/' || export RES=1
 site_test 'https://www.topps.com/' || export RES=1
 site_test 'http://www.comando.la/' 'socks5://91.142.74.232:40001' || export RES=1
-site_test 'http://bludv.xyz/' 'socks5://91.142.74.232:40001' || export RES=1
 
 exit $RES

@@ -76,7 +76,7 @@ solver_args = {
   'disable_gpu': False,
   'headless': False,
   'browser_wrapper': 'zendriver',
-  'debug_dir': None
+  'debug_dir': None,
 }
 
 
@@ -134,7 +134,7 @@ async def wait_first_non_exception(tasks, return_condition = lambda x: True):
   exceptions = []
   try:
     while task_features:
-      finished, to_cancel_tasks = await asyncio.wait(task_features, return_when = asyncio.FIRST_COMPLETED)
+      finished, to_cancel_tasks = await asyncio.wait(task_features, return_when=asyncio.FIRST_COMPLETED)
       for f in finished:
         task_features.remove(f)
       for f in finished:

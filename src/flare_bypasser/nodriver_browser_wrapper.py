@@ -5,6 +5,7 @@ import asyncio
 import shutil
 import logging
 import time
+import uuid
 
 import cv2
 

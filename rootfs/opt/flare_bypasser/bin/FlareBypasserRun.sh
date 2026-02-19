@@ -142,6 +142,11 @@ then
 fi
 
 ADD_PARAMS=""
+
+if [ "$BROWSER_WRAPPER" != "" ] ; then
+  ADD_PARAMS="$ADD_PARAMS --browser-wrapper=$BROWSER_WRAPPER"
+fi
+
 if [ "$CHROME_DISABLE_GPU" = true ] ; then
   ADD_PARAMS="$ADD_PARAMS --disable-gpu"
 fi
@@ -161,7 +166,7 @@ if [ "$SAVE_CHALLENGE_SCREENSHOTS" = true ] ; then
 fi
 
 if [ "$FORKS" != "" ] ; then
-  ADD_PARAMS="$ADD_PARAMS --forks="\""$FORKS"\"
+  ADD_PARAMS="$ADD_PARAMS --forks=$FORKS"
 fi
 
 echo "Run server $(pip show flare-bypasser | grep Version | awk '{print $2}'

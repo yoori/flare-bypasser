@@ -1,7 +1,6 @@
 [build-system]
 requires = [
-  'setuptools>=45.0',
-  'setuptools-scm'
+  'setuptools>=61.0'
 ]
 build-backend = "setuptools.build_meta"
 
@@ -16,13 +15,39 @@ description = ""
 readme = "README.md"
 license = {text = 'GNU Lesser General Public License'}
 requires-python = ">=3.9"
-dynamic = ["dependencies"]
+dependencies = [
+  'asyncio',
+  'uuid',
+  'urllib3',
+  'httpx',
+  'argparse',
+  'oslex',
+  'jinja2',
+  'numpy',
+  'xvfbwrapper==0.2.9 ; platform_system != "Windows"',
+  'fastapi',
+  'uvicorn',
+  'gunicorn ; platform_system != "Windows"',
+]
+
+[project.optional-dependencies]
+nodriver = [
+  'websockets==14.0',
+  'nodriver @ git+https://github.com/ultrafunkamsterdam/nodriver.git',
+]
+zendriver = [
+  'websockets==14.0',
+  'zendriver_flare_bypasser==0.2.6.1',
+]
 
 [project.urls]
 homepage = "https://github.com/yoori/flare-bypasser"
 
-[options]
-package_dir = "src/flare_bypasser"
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [project.scripts]
 flare_bypass_server = "flare_bypasser:server_run"

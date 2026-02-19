@@ -1,5 +1,12 @@
 import importlib.metadata
 
+try:
+  import cv2  # noqa: F401
+except ImportError as ex:
+  raise ImportError(
+    "Missing required dependency 'cv2'. Install OpenCV package: pip install opencv-python"
+  ) from ex
+
 from .flare_bypasser import Request, Response, Solver, BaseCommandProcessor
 from .browser_wrapper import BrowserWrapper
 from .proxy_controller import ProxyController

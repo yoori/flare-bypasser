@@ -21,6 +21,7 @@ import cv2
 from .browser_wrapper import BrowserWrapper
 from .proxy_controller import ProxyController
 
+
 logger = logging.getLogger(__name__)
 
 USER_AGENT = None
@@ -180,6 +181,8 @@ class Solver(object):
   _debug_dir: str = None
   _log_prefix: str = ''
   _challenge_screenshots_dir: str = None
+  _browser_wrapper: str = 'zendriver'
+  _browser_wrapper_impl = BrowserWrapper
 
   class Exception(Exception):
     step = None
@@ -195,6 +198,7 @@ class Solver(object):
     headless = False,
     debug_dir: str = None,
     challenge_screenshots_dir: str = None,
+    browser_wrapper: str = 'zendriver',
     log_prefix: str = '',
   ):
     self._proxy = proxy
@@ -215,6 +219,17 @@ class Solver(object):
     self._command_processors['request.post'] = make_post_command_processor
     self._disable_gpu = disable_gpu
     self._headless = headless
+    self._browser_wrapper = browser_wrapper
+    if browser_wrapper == 'nodriver':
+      from .nodriver_browser_wrapper import NoDriverBrowserWrapper as BrowserWrapperImpl
+    elif browser_wrapper == 'zendriver':
+      from .zendriver_browser_wrapper import ZenDriverBrowserWrapper as BrowserWrapperImpl
+    else:
+      raise ValueError(
+        "Unknown browser wrapper implementation: '" + str(browser_wrapper) +
+        "'. Available implementations: nodriver, zendriver"
+      )
+    self._browser_wrapper_impl = BrowserWrapperImpl
     self._log_prefix = log_prefix
 
   @staticmethod
@@ -313,7 +328,7 @@ class Solver(object):
       with proxy_holder:
         try:
           step = 'browser init'
-          self._driver: BrowserWrapper = await BrowserWrapper.create(
+          self._driver = await self._browser_wrapper_impl.create(
             proxy=use_proxy,
             disable_gpu=self._disable_gpu,
             headless=self._headless,
@@ -593,7 +608,7 @@ class Solver(object):
       driver = None
       try:
         # Create instance without proxy
-        driver: BrowserWrapper = await BrowserWrapper.create(
+        driver = await self._browser_wrapper_impl.create(
           disable_gpu = self._disable_gpu)
         await driver.get('about:blank')
         USER_AGENT = await driver.get_user_agent()

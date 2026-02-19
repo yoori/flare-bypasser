@@ -24,6 +24,7 @@ install_requires = [
   'urllib3',
   'websockets==14.0',
   'zendriver_flare_bypasser==0.2.6.1',
+  'nodriver',
   'httpx',
   'argparse',
   'oslex',

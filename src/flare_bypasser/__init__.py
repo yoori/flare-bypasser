@@ -1,6 +1,7 @@
 import importlib.metadata
 
-from .flare_bypasser import Request, Response, Solver, BrowserWrapper, BaseCommandProcessor
+from .flare_bypasser import Request, Response, Solver, BaseCommandProcessor
+from .browser_wrapper import BrowserWrapper
 from .proxy_controller import ProxyController
 from .flare_bypass_server import server, server_run
 from .async_client import AsyncClient

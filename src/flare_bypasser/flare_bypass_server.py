@@ -75,6 +75,7 @@ solver_args = {
   'proxy_controller': None,
   'disable_gpu': False,
   'headless': False,
+  'browser_wrapper': 'zendriver',
   'debug_dir': None
 }
 
@@ -271,8 +272,7 @@ async def process_solve_request(
             lambda fork_i = cur_fork_i: deffered_call(
               lambda: solve(
                 solve_request, proxy = proxy, solver_args = local_solver_args,
-                log_prefix=("fork #" + str(fork_i) + ", "),
-                fill_user_agent=False  # < Request user agent in separate task
+                log_prefix=("fork #" + str(fork_i) + ", ")
               ),
               forks_model.delay
             )
@@ -657,6 +657,11 @@ def init_args_parser():
   )
   parser.add_argument("--verbose", action='store_true')
   parser.add_argument(
+    "--browser-wrapper", type=str, default='zendriver',
+    choices=['zendriver', 'nodriver'],
+    help="Browser wrapper implementation to use"
+  )
+  parser.add_argument(
     "--debug-dir", type=str, default=None,
     help="""directory for save intermediate DOM dumps and screenshots on solving,
     for each request will be created unique directory"""
@@ -740,6 +745,8 @@ def server_run():
 
     if args.disable_gpu:
       solver_args['disable_gpu'] = True
+
+    solver_args['browser_wrapper'] = args.browser_wrapper
 
     if USE_GUNICORN:
       sys.argv += ['-b', args.bind]

@@ -14,13 +14,13 @@ class BrowserWrapper(abc.ABC):
     if wrapper_type == 'zendriver':
       module_name = 'flare_bypasser.zendriver_browser_wrapper'
       class_name = 'ZenDriverBrowserWrapper'
-    elif wrapper_type == 'nodriver':
-      module_name = 'flare_bypasser.nodriver_browser_wrapper'
-      class_name = 'NoDriverBrowserWrapper'
+    elif wrapper_type == 'drissionpage':
+      module_name = 'flare_bypasser.drissionpage_browser_wrapper'
+      class_name = 'DrissionPageBrowserWrapper'
     else:
       if ':' not in wrapper_type:
         raise ValueError(
-          "Invalid wrapper type. Use 'zendriver', 'nodriver' or 'module.path:ClassName'."
+          "Invalid wrapper type. Use 'zendriver', 'drissionpage' or 'module.path:ClassName'."
         )
       module_name, class_name = wrapper_type.split(':', 1)
 

@@ -658,7 +658,7 @@ def init_args_parser():
   parser.add_argument("--verbose", action='store_true')
   parser.add_argument(
     "--browser-wrapper", type=str, default='zendriver',
-    choices=['zendriver', 'nodriver'],
+    choices=['zendriver', 'drissionpage'],
     help="Browser wrapper implementation to use"
   )
   parser.add_argument(

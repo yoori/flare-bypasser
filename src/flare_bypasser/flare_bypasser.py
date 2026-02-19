@@ -220,14 +220,14 @@ class Solver(object):
     self._disable_gpu = disable_gpu
     self._headless = headless
     self._browser_wrapper = browser_wrapper
-    if browser_wrapper == 'nodriver':
-      from .nodriver_browser_wrapper import NoDriverBrowserWrapper as BrowserWrapperImpl
+    if browser_wrapper == 'drissionpage':
+      from .drissionpage_browser_wrapper import DrissionPageBrowserWrapper as BrowserWrapperImpl
     elif browser_wrapper == 'zendriver':
       from .zendriver_browser_wrapper import ZenDriverBrowserWrapper as BrowserWrapperImpl
     else:
       raise ValueError(
         "Unknown browser wrapper implementation: '" + str(browser_wrapper) +
-        "'. Available implementations: nodriver, zendriver"
+        "'. Available implementations: drissionpage, zendriver"
       )
     self._browser_wrapper_impl = BrowserWrapperImpl
     self._log_prefix = log_prefix

@@ -32,11 +32,6 @@ dependencies = [
   'zendriver_flare_bypasser==0.2.6.1',
 ]
 
-[project.optional-dependencies]
-nodriver = [
-  'nodriver @ git+https://github.com/ultrafunkamsterdam/nodriver.git',
-]
-
 [project.urls]
 homepage = "https://github.com/yoori/flare-bypasser"
 

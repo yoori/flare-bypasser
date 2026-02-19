@@ -12,7 +12,7 @@ authors = [
 ]
 
 description = "flare_bypasser distribution with selectable browser wrapper dependencies"
-readme = "../README.md"
+readme = "README.md"
 license = {text = 'GNU Lesser General Public License'}
 requires-python = ">=3.9"
 dependencies = [

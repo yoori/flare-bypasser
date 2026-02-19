@@ -133,7 +133,7 @@ RUN echo "Install python package for arch: $(arch)"
 WORKDIR /app
 
 COPY . flare_bypasser
-RUN ADDITIONAL_PYTHONPATH="$PYTHONPATH" pip install --prefer-binary ./flare_bypasser[$BROWSER_WRAPPER]
+RUN ADDITIONAL_PYTHONPATH="$PYTHONPATH" pip install --prefer-binary ./flare_bypasser/flare_bypasser_ext[$BROWSER_WRAPPER]
 
 # Cleanup environment - decrease image size.
 RUN pip cache purge && apt clean

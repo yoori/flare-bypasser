@@ -62,8 +62,25 @@ async def run_browser_wrapper_util(args: argparse.Namespace) -> None:
       await browser.close()
 
 
+def _run_with_nodriver_loop(coro_factory) -> bool:
+  try:
+    import nodriver
+  except ImportError:
+    return False
+
+  nodriver_loop = getattr(nodriver, "loop", None)
+  if nodriver_loop is None:
+    return False
+
+  nodriver_loop().run_until_complete(coro_factory())
+  return True
+
+
 def main() -> int:
   args = parse_args()
+  if args.wrapper_type == "nodriver" and _run_with_nodriver_loop(lambda: run_browser_wrapper_util(args)):
+    return 0
+
   asyncio.run(run_browser_wrapper_util(args))
   return 0
 

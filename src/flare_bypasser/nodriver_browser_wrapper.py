@@ -87,24 +87,40 @@ class NoDriverBrowserWrapper(BrowserWrapper):
 
   @staticmethod
   async def create(proxy: bool = None, disable_gpu: bool = False, headless: bool = False):
-    user_data_dir = make_user_data_dir()
     NoDriverBrowserWrapper.start_xvfb_display()
-    browser_args = build_browser_args(
-      user_data_dir=user_data_dir,
-      proxy=proxy,
-      disable_gpu=disable_gpu,
-      headless=headless,
-    )
-    try:
-      config = nodriver.Config(
-        sandbox=False,
-        browser_args=browser_args
-      )
-      nodriver_driver = await nodriver.Browser.create(config)
-      return NoDriverBrowserWrapper(nodriver_driver, user_data_dir=user_data_dir)
-    except BaseException:
-      shutil.rmtree(user_data_dir, ignore_errors=True)
-      raise
+    max_create_retries = 3
+    known_startup_race_error = "'NoneType' object has no attribute 'closed'"
+
+    for attempt in range(1, max_create_retries + 1):
+      user_data_dir = make_user_data_dir()
+      nodriver_driver = None
+      try:
+        browser_args = build_browser_args(
+          user_data_dir=user_data_dir,
+          proxy=proxy,
+          disable_gpu=disable_gpu,
+          headless=headless,
+        )
+        config = nodriver.Config(
+          sandbox=False,
+          browser_args=browser_args
+        )
+        nodriver_driver = await nodriver.Browser.create(config)
+        return NoDriverBrowserWrapper(nodriver_driver, user_data_dir=user_data_dir)
+      except AttributeError as e:
+        if known_startup_race_error in str(e) and attempt < max_create_retries:
+          logger.warning(
+            "NoDriverBrowserWrapper.create(): nodriver init failed with known connection race; "
+            "retrying (%s/%s)",
+            attempt,
+            max_create_retries,
+          )
+          await asyncio.sleep(0.2 * attempt)
+          continue
+        raise
+      finally:
+        if nodriver_driver is None:
+          shutil.rmtree(user_data_dir, ignore_errors=True)
 
   # Get original driver page impl - can be used only in user command specific implementations
   def get_driver(self) -> nodriver.Tab:
@@ -416,4 +432,3 @@ class NoDriverBrowserWrapper(BrowserWrapper):
           await t
         except BaseException:
           pass
-

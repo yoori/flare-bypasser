@@ -1,7 +1,7 @@
 import sys
 import os
 import importlib
-import distutils.core
+import setuptools
 
 
 # Trick for avoid installation of non pip installed packages (apt), available by ADDITIONAL_PYTHONPATH
@@ -22,24 +22,37 @@ install_requires = [
   'asyncio',
   'uuid',
   'urllib3',
-  'websockets==14.0',
-  'zendriver_flare_bypasser==0.2.6.1',
-  'nodriver',
   'httpx',
   'argparse',
   'oslex',
   'jinja2',
 
+  'xvfbwrapper==0.2.9 ; platform_system != "Windows"',
+
   # Server dependecies
   'fastapi',
   'uvicorn',
-
-  'xvfbwrapper==0.2.9 ; platform_system != "Windows"',
   'gunicorn ; platform_system != "Windows"',
+]
+
+nodriver_install_requires = [
+  'websockets==13.0',
+  'nodriver @ git+https://github.com/ultrafunkamsterdam/nodriver.git',
+]
+
+zendriver_install_requires = [
+  'websockets==14.0',
+  'zendriver_flare_bypasser==0.2.6.1',
 ]
 
 for package_import_name, package in [('numpy', 'numpy'), ('cv2', 'opencv-python')]:
   if not is_installed(package_import_name):
     install_requires += [package]
 
-distutils.core.setup(install_requires=install_requires)
+setuptools.setup(
+  install_requires=install_requires,
+  extras_require={
+    'nodriver': nodriver_install_requires,
+    'zendriver': zendriver_install_requires,
+  }
+)

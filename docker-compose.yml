@@ -15,7 +15,7 @@ services:
       DEBUG: "false"
       VERBOSE: "false"
       SAVE_CHALLENGE_SCREENSHOTS: "false"
-      # BROWSER_WRAPPER: nodriver
+      BROWSER_WRAPPER: nodriver
     container_name: flare-bypasser
     image: flare-bypasser:latest
     ports:

@@ -26,3 +26,4 @@ package_dir = "src/flare_bypasser"
 
 [project.scripts]
 flare_bypass_server = "flare_bypasser:server_run"
+browser_wrapper_util = "flare_bypasser.browser_wrapper_util:main"

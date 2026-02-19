@@ -5,14 +5,14 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "flare_bypasser"
+name = "flare_bypasser_ext"
 version = "0.1.55"
 authors = [
   {name = "yoori", email = "yuri.kuznecov@gmail.com"}
 ]
 
-description = ""
-readme = "README.md"
+description = "flare_bypasser distribution with selectable browser wrapper dependencies"
+readme = "../README.md"
 license = {text = 'GNU Lesser General Public License'}
 requires-python = ">=3.9"
 dependencies = [
@@ -28,12 +28,15 @@ dependencies = [
   'fastapi',
   'uvicorn',
   'gunicorn ; platform_system != "Windows"',
-  'websockets==14.0',
-  'zendriver_flare_bypasser==0.2.6.1',
 ]
 
 [project.optional-dependencies]
+zendriver = [
+  'websockets==14.0',
+  'zendriver_flare_bypasser==0.2.6.1',
+]
 nodriver = [
+  'websockets==14.0',
   'nodriver @ git+https://github.com/ultrafunkamsterdam/nodriver.git',
 ]
 
@@ -41,10 +44,10 @@ nodriver = [
 homepage = "https://github.com/yoori/flare-bypasser"
 
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = {"" = "../src"}
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["../src"]
 
 [project.scripts]
 flare_bypass_server = "flare_bypasser:server_run"

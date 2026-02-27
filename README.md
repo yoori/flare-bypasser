@@ -27,7 +27,7 @@ already included within the image.
 
 We provide a `docker-compose.yml` configuration file. Clone this repository and execute
 `docker compose up -d` to start
-the container.
+the container. The server listens on **port 8080** inside the container by default (mapped to 20080 on the host). To use a different port, set the `PORT` environment variable (e.g. `PORT=3000`) and adjust the `ports` mapping in `docker-compose.yml` (e.g. `20080:3000`).
 
 ### From github as pip package
 > **Warning**
@@ -41,7 +41,7 @@ the container.
 * (Only in macOS) Install [XQuartz](https://www.xquartz.org/) package.
 * If you plan to use proxy with authorization : install [gost](https://github.com/ginuerzh/gost).
 * Run `pip install git+https://github.com/yoori/flare-bypasser.git`.
-* Run `flare_bypass_server` command to start FlareBypasser.
+* Run `flare_bypass_server` command to start FlareBypasser. The server binds to `127.0.0.1:8000` by default. Set the `PORT` environment variable to use another port (e.g. `PORT=8080`).
 
 ### From source code
 
@@ -57,9 +57,11 @@ the container.
 * If you plan to use proxy with authorization : install [gost](https://github.com/ginuerzh/gost).
 * Clone this repository.
 * Run `pip install .` (from project root).
-* Run `flare_bypass_server` command to start FlareBypasser.
+* Run `flare_bypass_server` command to start FlareBypasser. The server binds to `127.0.0.1:8000` by default. Set the `PORT` environment variable to use another port.
 
 ## Usage
+
+**Port:** When run via Docker the server listens on port **8080** (host mapping is 20080 by default). When run via pip/source the default is **8000**. You can set the `PORT` environment variable to change the listen port; with Docker, also set the port mapping (e.g. `ports: - "20080:3000"` if `PORT=3000`). The examples below use `localhost:8080` (Docker); use your port if different.
 
 Example Bash request:
 ```bash

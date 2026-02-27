@@ -11,6 +11,7 @@ services:
       dockerfile: Dockerfile
     environment:
       UNUSED: "false"
+      # PORT: "8080"   # Server listen port (default 8080). Set to change; update ports mapping below if needed.
       # FORKS: "5:3" #< Uncomment if you work with sites with ustable challenge loading (start additional 3 forks after 5 seconds).
       DEBUG: "false"
       VERBOSE: "false"
@@ -18,7 +19,8 @@ services:
     container_name: flare-bypasser
     image: flare-bypasser:latest
     ports:
-      - 20080:8080
+      # Host:container. Container port uses PORT env (default 8080). Example: PORT=3000 -> use "20080:3000"
+      - "${HOST_PORT:-20080}:${PORT:-8080}"
     #volumes:
       #- ./var:/opt/flare_bypasser/var/
       #< Uncomment if you persistent logs between runs

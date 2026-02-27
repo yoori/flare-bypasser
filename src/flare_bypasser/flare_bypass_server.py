@@ -626,10 +626,16 @@ def parse_solve_forks(solve_forks: str):
 
 
 def init_args_parser():
+  # Default bind: use PORT env for port if set, else 127.0.0.1:8000 (or 0.0.0.0:PORT in Docker via -b)
+  port_from_env = os.environ.get('PORT')
+  default_bind = ('127.0.0.1:' + port_from_env) if port_from_env else '127.0.0.1:8000'
+
   parser = argparse.ArgumentParser(
     description='Start flare_bypass server.',
     epilog='Other arguments will be passed to gunicorn or uvicorn(win32) as is.')
-  parser.add_argument("-b", "--bind", type=str, default='127.0.0.1:8000')
+  parser.add_argument(
+    "-b", "--bind", type=str, default=default_bind,
+    help="Host:port to bind (e.g. 127.0.0.1:8000 or 0.0.0.0:8080). Default port is from PORT env if set, else 8000.")
   # < parse for pass to gunicorn as is and as "--host X --port X" to uvicorn
   parser.add_argument("--extensions", nargs='*', type=str)
   parser.add_argument(

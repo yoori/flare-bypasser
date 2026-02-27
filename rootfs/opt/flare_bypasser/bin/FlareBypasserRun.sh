@@ -168,5 +168,6 @@ echo "Run server $(pip show flare-bypasser | grep Version | awk '{print $2}'
 ), chrome: $(/usr/bin/chrome --version
 ), extensions: $EXTENSION_MODULES, add params: $ADD_PARAMS"
 
-flare_bypass_server -b 0.0.0.0:8080 $EXTENSION_MODULES_PARAM $ADD_PARAMS 2>&1 | \
+SERVER_PORT=${PORT:-8080}
+flare_bypass_server -b 0.0.0.0:$SERVER_PORT $EXTENSION_MODULES_PARAM $ADD_PARAMS 2>&1 | \
   tee "$WORKSPACE_ROOT/log/flare_bypass_server.log"

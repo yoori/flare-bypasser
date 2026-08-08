@@ -92,6 +92,11 @@ COPY --from=builder /usr/local/bin/gost /usr/local/bin/gost
 
 # Copy installed chrome
 COPY --from=builder /opt/flare_bypasser/installed_chrome /
+# ARM Chromium installs /usr/bin/chromium while the startup script
+# may expect /usr/bin/chrome.
+RUN if command -v chromium >/dev/null 2>&1 && [ ! -e /usr/bin/chrome ]; then \
+      ln -s "$(command -v chromium)" /usr/bin/chrome; \
+    fi
 
 # Install dependencies and create user
 # You can test Chromium running this command inside the container:
